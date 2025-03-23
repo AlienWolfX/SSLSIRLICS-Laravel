@@ -21,3 +21,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Ignore usa kay daghanay files
+public/rsc/*
