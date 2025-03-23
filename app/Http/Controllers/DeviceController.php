@@ -92,4 +92,51 @@ class DeviceController extends Controller
             ],
         ]);
     }
+
+    public function municipality_count(string $province, string $municipality): JsonResponse
+    {
+        $pattern = $province . '-' . $municipality . '-%';
+
+        $count = Device::query()
+            ->where('SOCid', 'LIKE', $pattern)
+            ->count();
+
+        $devices = Device::query()
+            ->where('SOCid', 'LIKE', $pattern)
+            ->select('SOCid', 'SOCadd', 'status', 'date_installed')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'province_code' => strtoupper($province),
+                'municipality_code' => strtoupper($municipality),
+                'total_devices' => $count,
+            ],
+        ]);
+    }
+
+    public function barangay_count(string $province, string $municipality, string $barangay): JsonResponse
+    {
+        $pattern = $province . '-' . $municipality . '-' . $barangay;
+
+        $count = Device::query()
+            ->where('SOCid', 'LIKE', $pattern . '%')
+            ->count();
+
+        $devices = Device::query()
+            ->where('SOCid', 'LIKE', $pattern . '%')
+            ->select('SOCid', 'SOCadd', 'status', 'date_installed')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'province_code' => strtoupper($province),
+                'municipality_code' => strtoupper($municipality),
+                'barangay_code' => strtoupper($barangay),
+                'total_devices' => $count,
+            ],
+        ]);
+    }
 }
