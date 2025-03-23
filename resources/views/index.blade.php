@@ -71,7 +71,6 @@
       document.addEventListener("DOMContentLoaded", async () => {
         if (!streetlightMap) {
           streetlightMap = new StreetlightMap();
-          // Wait for initialization to complete
           await new Promise((resolve) => setTimeout(resolve, 100));
           if (streetlightMap.map) {
             streetlightMap.map.invalidateSize();

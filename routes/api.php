@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Controllers\StreetlightController;
+use App\Http\Controllers\Api\DeviceReadingController;
+use App\Http\Controllers\DeviceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -9,6 +10,9 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 
-// StreetlightController.php
+Route::prefix('v1')->group(function () {
+    Route::get('/readings', [DeviceReadingController::class, 'index']);
+    Route::get('/readings/{socid}', [DeviceReadingController::class, 'show']);
 
-Route::get('/streetlights', [StreetlightController::class, 'index']);
+    Route::get('/province_count/{province}', [DeviceController::class, 'province_count']);
+});

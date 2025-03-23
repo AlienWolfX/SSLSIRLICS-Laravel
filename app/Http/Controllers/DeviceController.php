@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Device;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class DeviceController extends Controller
 {
@@ -75,5 +76,20 @@ class DeviceController extends Controller
 
         return redirect()->route('dashboard')
             ->with('success', 'Device has been successfully updated!');
+    }
+
+    public function province_count(string $province): JsonResponse
+    {
+        $count = Device::query()
+            ->where('SOCid', 'LIKE', $province . '-%')
+            ->count();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'province_code' => strtoupper($province),
+                'total_devices' => $count,
+            ],
+        ]);
     }
 }
