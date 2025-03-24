@@ -84,12 +84,32 @@ class DeviceController extends Controller
             ->where('SOCid', 'LIKE', $province . '-%')
             ->count();
 
+        $statusCounts = Device::query()
+            ->where('SOCid', 'LIKE', $province . '-%')
+            ->selectRaw('
+                status,
+                COUNT(*) as count,
+                ROUND((COUNT(*) / ?) * 100, 2) as percentage
+            ', [$count])
+            ->groupBy('status')
+            ->get()
+            ->keyBy('status');
+
+        $hasActive = isset($statusCounts['active']) && $statusCounts['active']->count > 0;
+        $hasInactive = isset($statusCounts['inactive']) && $statusCounts['inactive']->count > 0;
+        $hasMaintenance = isset($statusCounts['maintenance']) && $statusCounts['maintenance']->count > 0;
+
         return response()->json([
             'status' => 'success',
             'data' => [
                 'province_code' => strtoupper($province),
                 'total_devices' => $count,
-            ],
+                'status_summary' => [
+                    // 'has_active' => $hasActive,
+                    'has_inactive' => $hasInactive,
+                    'has_maintenance' => $hasMaintenance,
+                ]
+            ]
         ]);
     }
 
@@ -97,14 +117,27 @@ class DeviceController extends Controller
     {
         $pattern = $province . '-' . $municipality . '-%';
 
+        // Get total count
         $count = Device::query()
             ->where('SOCid', 'LIKE', $pattern)
             ->count();
 
-        $devices = Device::query()
+        // Get status counts
+        $statusCounts = Device::query()
             ->where('SOCid', 'LIKE', $pattern)
-            ->select('SOCid', 'SOCadd', 'status', 'date_installed')
-            ->get();
+            ->selectRaw('
+                status,
+                COUNT(*) as count,
+                ROUND((COUNT(*) / ?) * 100, 2) as percentage
+            ', [$count])
+            ->groupBy('status')
+            ->get()
+            ->keyBy('status');
+
+        // Check if each status exists
+        $hasActive = isset($statusCounts['active']) && $statusCounts['active']->count > 0;
+        $hasInactive = isset($statusCounts['inactive']) && $statusCounts['inactive']->count > 0;
+        $hasMaintenance = isset($statusCounts['maintenance']) && $statusCounts['maintenance']->count > 0;
 
         return response()->json([
             'status' => 'success',
@@ -112,7 +145,12 @@ class DeviceController extends Controller
                 'province_code' => strtoupper($province),
                 'municipality_code' => strtoupper($municipality),
                 'total_devices' => $count,
-            ],
+                'status_summary' => [
+                    // 'has_active' => $hasActive,
+                    'has_inactive' => $hasInactive,
+                    // 'has_maintenance' => $hasMaintenance,
+                ]
+            ]
         ]);
     }
 
@@ -120,10 +158,29 @@ class DeviceController extends Controller
     {
         $pattern = $province . '-' . $municipality . '-' . $barangay;
 
+        // Get total count
         $count = Device::query()
             ->where('SOCid', 'LIKE', $pattern . '%')
             ->count();
 
+        // Get status counts
+        $statusCounts = Device::query()
+            ->where('SOCid', 'LIKE', $pattern . '%')
+            ->selectRaw('
+                status,
+                COUNT(*) as count,
+                ROUND((COUNT(*) / ?) * 100, 2) as percentage
+            ', [$count])
+            ->groupBy('status')
+            ->get()
+            ->keyBy('status');
+
+        // Check if each status exists
+        $hasActive = isset($statusCounts['active']) && $statusCounts['active']->count > 0;
+        $hasInactive = isset($statusCounts['inactive']) && $statusCounts['inactive']->count > 0;
+        $hasMaintenance = isset($statusCounts['maintenance']) && $statusCounts['maintenance']->count > 0;
+
+        // Get detailed device information
         $devices = Device::query()
             ->where('SOCid', 'LIKE', $pattern . '%')
             ->select('SOCid', 'SOCadd', 'status', 'date_installed')
@@ -136,7 +193,12 @@ class DeviceController extends Controller
                 'municipality_code' => strtoupper($municipality),
                 'barangay_code' => strtoupper($barangay),
                 'total_devices' => $count,
-            ],
+                'status_summary' => [
+                    // 'has_active' => $hasActive,
+                    'has_inactive' => $hasInactive,
+                    // 'has_maintenance' => $hasMaintenance,
+                ],
+            ]
         ]);
     }
 }

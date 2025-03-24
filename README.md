@@ -8,6 +8,10 @@ Smart Street Light System which is under the research "RS-Program on Producing A
     <img src="./public/images/craft-banner.png" alt="CRAFT logo">
 </p>
 
+### SOCID format
+
+`{PROVINCE}-{MUNICIPALITY/CITY}-{BARANGAY}-{STREETLIGHT_NUMBER}
+
 ### Instructions
 
 `composer install`

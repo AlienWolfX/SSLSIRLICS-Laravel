@@ -1,22 +1,25 @@
 import "./bootstrap";
-
 import Alpine from "alpinejs";
 
 window.Alpine = Alpine;
-
 Alpine.start();
 
 // DARK MODE TOGGLE BUTTON
 var themeToggleDarkIcon = document.getElementById("theme-toggle-dark-icon");
 var themeToggleLightIcon = document.getElementById("theme-toggle-light-icon");
 
-if (
-    localStorage.getItem("color-theme") === "dark" ||
-    (!("color-theme" in localStorage) &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches)
-) {
+// Set default theme to light if no theme is set
+if (!localStorage.getItem("color-theme")) {
+    localStorage.setItem("color-theme", "light");
+    document.documentElement.classList.remove("dark");
+}
+
+// Check for theme preference
+if (localStorage.getItem("color-theme") === "dark") {
+    document.documentElement.classList.add("dark");
     themeToggleLightIcon.classList.remove("hidden");
 } else {
+    document.documentElement.classList.remove("dark");
     themeToggleDarkIcon.classList.remove("hidden");
 }
 

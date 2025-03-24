@@ -8,21 +8,6 @@ const CONFIG = {
             READINGS: "/readings",
         },
     },
-    MAP: {
-        ZOOM_LEVELS: {
-            CITY: 10.13,
-            MUNICIPALITY: 14,
-        },
-    },
-    PROVINCES: {
-        CODES: {
-            "Surigao Del Sur": "SDS",
-            "Agusan Del Norte": "ADN",
-            "Agusan Del Sur": "ADS",
-            "Dinagat Islands": "DIN",
-            "Surigao Del Norte": "SDN",
-        },
-    },
 };
 
 Object.freeze(CONFIG);
