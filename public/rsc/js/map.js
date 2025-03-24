@@ -14,7 +14,9 @@ class StreetlightMap {
         this.caragaData = null;
         this.barangayMarkers = new Map();
         this.municipalityZoomThreshold = 9;
-        this.barangayZoomThreshold = 12;
+        this.barangayZoomThreshold = 13;
+        this.detailZoomLevel = 16; // Increased for more detail
+        this.lastClickedBarangay = null; // Add this to track clicked barangay
         this.initialize();
     }
 
@@ -188,13 +190,19 @@ class StreetlightMap {
                         provinceCode,
                         data.municipality_code
                     );
-                    this.map.flyTo(coordinates, 13, {
-                        animate: true,
-                        duration: 1,
-                        complete: () => {
-                            console.log("Fly animation complete");
-                        },
-                    });
+                    this.map.flyTo(
+                        coordinates,
+                        this.barangayZoomThreshold + 1,
+                        {
+                            // Increased zoom level
+                            animate: true,
+                            duration: 1,
+                            complete: () => {
+                                console.log("Fly animation complete");
+                                this.toggleMarkersVisibility();
+                            },
+                        }
+                    );
                 });
 
                 const markerKey = `${provinceCode}_${data.municipality_code}`;
@@ -292,6 +300,15 @@ class StreetlightMap {
                 "barangays"
             );
 
+            // Remove existing markers
+            this.markers.forEach((marker) => this.map.removeLayer(marker));
+            this.municipalityMarkers.forEach((marker) =>
+                this.map.removeLayer(marker)
+            );
+            this.barangayMarkers.forEach((marker) =>
+                this.map.removeLayer(marker)
+            );
+
             // Create markers for each barangay
             for (const [name, data] of Object.entries(municipality.barangays)) {
                 if (
@@ -352,6 +369,18 @@ class StreetlightMap {
                 marker.on("mouseout", function () {
                     this.closePopup();
                     this.setZIndexOffset(0);
+                });
+
+                marker.on("click", () => {
+                    this.lastClickedBarangay = marker; // Store clicked marker
+                    this.map.flyTo(coordinates, this.detailZoomLevel, {
+                        animate: true,
+                        duration: 1,
+                        complete: () => {
+                            console.log("Zoomed to barangay detail");
+                            this.toggleMarkersVisibility();
+                        },
+                    });
                 });
 
                 const markerKey = `${provinceCode}_${municipalityCode}_${data.barangay_code}`;
@@ -600,48 +629,45 @@ class StreetlightMap {
         const currentZoom = this.map.getZoom();
         console.log("Current zoom level:", currentZoom);
 
-        if (currentZoom > this.barangayZoomThreshold) {
-            this.markers.forEach((marker) => this.map.removeLayer(marker));
-            this.markers.clear();
+        // Remove all markers first
+        this.markers.forEach((marker) => this.map.removeLayer(marker));
+        this.municipalityMarkers.forEach((marker) =>
+            this.map.removeLayer(marker)
+        );
+        this.barangayMarkers.forEach((marker) => this.map.removeLayer(marker));
 
-            this.municipalityMarkers.forEach((marker) =>
-                this.map.removeLayer(marker)
-            );
-            this.municipalityMarkers.clear();
-
-            this.barangayMarkers.forEach((marker) => {
-                marker.setOpacity(1);
-                marker.setZIndexOffset(200);
-            });
-        } else if (currentZoom > this.municipalityZoomThreshold) {
-            this.markers.forEach((marker) => this.map.removeLayer(marker));
-            this.markers.clear();
-
-            this.barangayMarkers.forEach((marker) =>
-                this.map.removeLayer(marker)
-            );
-            this.barangayMarkers.clear();
-
-            this.municipalityMarkers.forEach((marker) => {
-                marker.setOpacity(1);
-                marker.setZIndexOffset(100);
-            });
-        } else {
-            this.municipalityMarkers.forEach((marker) =>
-                this.map.removeLayer(marker)
-            );
-            this.municipalityMarkers.clear();
-
-            this.barangayMarkers.forEach((marker) =>
-                this.map.removeLayer(marker)
-            );
-            this.barangayMarkers.clear();
-
-            this.markers.forEach((marker) => {
-                marker.setOpacity(1);
-                marker.setZIndexOffset(0);
-            });
+        // Don't show any markers at maximum zoom (detail view)
+        if (currentZoom >= this.detailZoomLevel) {
+            console.log("Detail view - hiding all markers");
+            return;
         }
+
+        let markersToShow = new Map();
+
+        if (currentZoom >= this.barangayZoomThreshold) {
+            // Show barangay markers at medium-high zoom
+            markersToShow = this.barangayMarkers;
+        } else if (currentZoom >= this.municipalityZoomThreshold) {
+            // Show municipality markers at medium zoom
+            markersToShow = this.municipalityMarkers;
+        } else {
+            // Show province markers at low zoom
+            markersToShow = this.markers;
+        }
+
+        // Show appropriate markers
+        markersToShow.forEach((marker) => {
+            if (marker.options.icon) {
+                marker.addTo(this.map);
+                marker.setZIndexOffset(
+                    currentZoom >= this.barangayZoomThreshold
+                        ? 200
+                        : currentZoom >= this.municipalityZoomThreshold
+                        ? 100
+                        : 0
+                );
+            }
+        });
     }
 
     static markerIcons = {
