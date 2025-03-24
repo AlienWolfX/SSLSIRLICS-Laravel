@@ -4,24 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SSLSIRLICS</title>
-    <link rel="icon" href="rsc/icons/favicon.ico" />
-    <link rel="stylesheet" href="rsc/bootstrap/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="rsc/leaflet/leaflet.css" />
-    <link rel="stylesheet" href="rsc/fontawesome/css/all.min.css" />
-    <script src="rsc/leaflet/leaflet.js"></script>
-    <script src="rsc/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <link rel="stylesheet" href="rsc/css/index.css" />
-    <link rel="stylesheet" href="rsc/css/details.css" />
+    <link rel="icon" href="{{ asset ('rsc/icons/favicon.ico')}}" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{ asset ('rsc/leaflet/leaflet.css')}}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+    <script src="{{ asset ('rsc/leaflet/leaflet.js')}}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="{{ asset ("rsc/css/index.css")}}" />
+    <link rel="stylesheet" href="{{ asset ("rsc/css/details.css")}}" />
   </head>
   <body>
-    <div class="loading-overlay">
+    {{-- <div class="loading-overlay">
       <div class="loader">
         <div></div>
         <div></div>
         <div></div>
         <div></div>
       </div>
-    </div>
+    </div> --}}
     <nav
       class="navbar navbar-light"
       id="navbar"
@@ -60,11 +60,12 @@
       </div>
     </nav>
     <div id="map"></div>
-    <script src="rsc/js/streetlight_queries.js"></script>
-    <script src="rsc/js/streetlights.js"></script>
-    <script src="rsc/bootstrap/apexcharts/apexcharts.js"></script>
-    <script src="rsc/bootstrap/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="rsc/js/localforage.min.js"></script>
+    <script src="{{ asset ('rsc/js/config.js')}}"></script>
+    <script src="{{ asset ('rsc/js/apiService.js')}}"></script>
+    <script src="{{ asset ('rsc/js/map.js')}}"></script>
+    <script src="{{ asset ('rsc/bootstrap/apexcharts/apexcharts.js')}}"></script>
+    <script src="{{ asset ('rsc/bootstrap/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
+    <script src="{{ asset ('rsc/js/localforage.min.js')}}"></script>
 
     <script>
       let streetlightMap;
