@@ -60,12 +60,12 @@
       </div>
     </nav>
     <div id="map"></div>
-    <script src="{{ asset ("rsc/js/config.js")}}"></script>
-    <script src="{{ asset ("rsc/js/streetlight_queries.js")}}"></script>
-    <script src="{{ asset ("rsc/js/streetlights.js")}}"></script>
-    <script src="{{ asset ("rsc/bootstrap/apexcharts/apexcharts.js")}}"></script>
-    <script src="{{ asset ("rsc/bootstrap/bootstrap/js/bootstrap.bundle.min.js")}}"></script>
-    <script src="{{ asset ("rsc/js/localforage.min.js")}}"></script>
+    <script src="{{ asset ('rsc/js/config.js')}}"></script>
+    <script src="{{ asset ('rsc/js/streetlight_queries.js')}}"></script>
+    <script src="{{ asset ('rsc/js/streetlights.js')}}"></script>
+    <script src="{{ asset ('rsc/bootstrap/apexcharts/apexcharts.js')}}"></script>
+    <script src="{{ asset ('rsc/bootstrap/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
+    <script src="{{ asset ('rsc/js/localforage.min.js')}}"></script>
 
     <script>
       let streetlightMap;

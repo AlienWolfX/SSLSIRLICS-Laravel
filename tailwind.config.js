@@ -14,8 +14,12 @@ export default {
             fontFamily: {
                 sans: ["Figtree", ...defaultTheme.fontFamily.sans],
             },
+            colors: {
+                grayishBlue: "#e8e6e6",
+            },
         },
     },
 
     plugins: [forms],
+    darkMode: "class",
 };

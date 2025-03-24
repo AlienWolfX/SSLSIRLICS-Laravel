@@ -31,7 +31,7 @@
         </thead>
         <tbody>
             @forelse($devices as $device)
-                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-grayishBlue dark:hover:bg-gray-600">
                     <td class="px-6 py-4 font-medium">{{ $device->SOCid }}</td>
                     <td class="px-6 py-4">{{ $device->SOCadd }}</td>
                     <td class="px-6 py-4">{{ $device->date_installed->format('M d, Y') }}</td>
