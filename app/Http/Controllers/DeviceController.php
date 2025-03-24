@@ -14,6 +14,25 @@ class DeviceController extends Controller
         return view('dashboard', compact('devices'));
     }
 
+    public function getAllDevice(): JsonResponse
+    {
+        try {
+            $devices = Device::all(['SOCid', 'lat', 'long']);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $devices,
+                'message' => 'Devices retrieved successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve devices',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function create()
     {
         return view('devices.create');
@@ -148,7 +167,7 @@ class DeviceController extends Controller
                 'status_summary' => [
                     // 'has_active' => $hasActive,
                     'has_inactive' => $hasInactive,
-                    // 'has_maintenance' => $hasMaintenance,
+                    'has_maintenance' => $hasMaintenance,
                 ]
             ]
         ]);
@@ -175,12 +194,10 @@ class DeviceController extends Controller
             ->get()
             ->keyBy('status');
 
-        // Check if each status exists
         $hasActive = isset($statusCounts['active']) && $statusCounts['active']->count > 0;
         $hasInactive = isset($statusCounts['inactive']) && $statusCounts['inactive']->count > 0;
         $hasMaintenance = isset($statusCounts['maintenance']) && $statusCounts['maintenance']->count > 0;
 
-        // Get detailed device information
         $devices = Device::query()
             ->where('SOCid', 'LIKE', $pattern . '%')
             ->select('SOCid', 'SOCadd', 'status', 'date_installed')
@@ -196,7 +213,7 @@ class DeviceController extends Controller
                 'status_summary' => [
                     // 'has_active' => $hasActive,
                     'has_inactive' => $hasInactive,
-                    // 'has_maintenance' => $hasMaintenance,
+                    'has_maintenance' => $hasMaintenance,
                 ],
             ]
         ]);
