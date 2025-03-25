@@ -794,17 +794,15 @@ class StreetlightMap {
                             <strong>${device.soc_id}</strong>
                             <div class="mt-1">
                                 <small class="text-muted">Status:</small>
-                                ${statusBadge}
-                            </div>
-                            <div class="mt-1">
-                                <small class="text-muted">Location:</small>
-                                <div class="text-secondary">
-                                    <small>Lat: ${device.coordinates.lat}</small><br>
-                                    <small>Long: ${device.coordinates.long}</small>
-                                </div>
+                                ${this.getStatusContent(
+                                    device.status,
+                                    device.updated_at
+                                )}
                             </div>
                             <div class="mt-2 text-center">
-                                <button onclick="streetlightMap.showDetails('${device.soc_id}')"
+                                <button onclick="streetlightMap.showDetails('${
+                                    device.soc_id
+                                }')"
                                         class="btn btn-primary btn-sm w-100">
                                     <i class="fas fa-info-circle me-1"></i>More Details
                                 </button>
@@ -862,24 +860,17 @@ class StreetlightMap {
 
                             // Update popup if it's open
                             if (marker.isPopupOpen()) {
-                                const statusBadge = `
-                                    <span class="badge ${this.getStatusBadgeClass(
-                                        response.data.status
-                                    )}">
-                                        <i class="fas fa-circle me-1"></i>${
-                                            response.data.status
-                                        }
-                                    </span>
-                                `;
-                                marker.getPopup().setContent(
-                                    marker
-                                        .getPopup()
-                                        .getContent()
-                                        .replace(
-                                            /<span class="badge[^>]*>[^<]*<\/span>/,
-                                            statusBadge
-                                        )
+                                const content = this.getStatusContent(
+                                    response.data.status,
+                                    response.data.updated_at
                                 );
+                                const popup = marker.getPopup();
+                                const currentContent = popup.getContent();
+                                const newContent = currentContent.replace(
+                                    /<span class="badge.*?<\/div>/s,
+                                    content
+                                );
+                                popup.setContent(newContent);
                             }
                         }
                     }
@@ -901,6 +892,14 @@ class StreetlightMap {
             default:
                 return "bg-secondary";
         }
+    }
+
+    getStatusContent(status, date) {
+        return `
+            <span class="badge ${this.getStatusBadgeClass(status)}">
+                <i class="fas fa-circle me-1"></i>${status}
+            </span>
+        `;
     }
 
     getMarkerIconByStatus(status) {
@@ -937,39 +936,117 @@ class StreetlightMap {
 
             const data = response.data;
 
-            // Update modal content
+            // Format the timestamp
+            const lastUpdate = new Date(data.last_update);
+            const formattedDate = lastUpdate.toLocaleString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+            });
+
+            // Helper function to safely format numeric values
+            const formatValue = (value, decimals = 1, unit = "") => {
+                return value != null && !isNaN(value)
+                    ? `${Number(value).toFixed(decimals)}${unit}`
+                    : "-";
+            };
+
+            // Update modal content with latest readings
             document.getElementById("modal-barangay-text").textContent =
                 data.location || "-";
-            document.getElementById("modal-solv").textContent =
-                data.solar_voltage || "-";
-            document.getElementById("modal-solc").textContent =
-                data.solar_current || "-";
+            document.getElementById("modal-solv").textContent = formatValue(
+                data.solar_voltage,
+                1,
+                "V"
+            );
+            document.getElementById("modal-solc").textContent = formatValue(
+                data.solar_current,
+                2,
+                "A"
+            );
             document.getElementById("modal-last-update").textContent =
-                data.last_update || "-";
+                formattedDate;
             document.getElementById("modal-status-badge").textContent =
                 data.status || "-";
             document.getElementById(
                 "modal-status-badge"
             ).className = `badge ${this.getStatusBadgeClass(data.status)}`;
-            document.getElementById("modal-bulbv").textContent =
-                data.bulb_voltage || "-";
-            document.getElementById("modal-curv").textContent =
-                data.current || "-";
-            document.getElementById("modal-batsoc").textContent =
-                data.battery_soc || "-";
-            document.getElementById("modal-batv").textContent =
-                data.battery_voltage || "-";
-            document.getElementById("modal-batc").textContent =
-                data.battery_current || "-";
+            document.getElementById("modal-bulbv").textContent = formatValue(
+                data.bulb_voltage,
+                1,
+                "V"
+            );
+            document.getElementById("modal-curv").textContent = formatValue(
+                data.current,
+                2,
+                "A"
+            );
+            document.getElementById("modal-batsoc").textContent = formatValue(
+                data.battery_soc,
+                1,
+                "%"
+            );
+            document.getElementById("modal-batv").textContent = formatValue(
+                data.battery_voltage,
+                1,
+                "V"
+            );
+            document.getElementById("modal-batc").textContent = formatValue(
+                data.battery_current,
+                2,
+                "A"
+            );
 
-            // Initialize or update the chart
-            this.initializeOrUpdateChart(data.charging_history);
+            // Process historical data and latest reading for the chart
+            const chargingHistory = data.charging_history || [];
+
+            // Add the latest reading to the history if it exists and has valid values
+            if (
+                data.last_update &&
+                (data.battery_soc != null ||
+                    data.solar_voltage != null ||
+                    data.battery_voltage != null ||
+                    data.current != null)
+            ) {
+                chargingHistory.push({
+                    timestamp: data.last_update,
+                    battery_soc: data.battery_soc,
+                    solar_voltage: data.solar_voltage,
+                    battery_voltage: data.battery_voltage,
+                    current: data.current,
+                });
+            }
+
+            // Sort the data by timestamp
+            chargingHistory.sort(
+                (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+            );
+
+            // Initialize or update the chart with the combined data
+            this.initializeOrUpdateChart(chargingHistory);
 
             // Show the modal
             const modal = new bootstrap.Modal(
                 document.getElementById("streetlightModal")
             );
+
+            // Start real-time updates when modal is shown
             modal.show();
+            this.startChartPolling(socId);
+
+            // Listen for modal close
+            document.getElementById("streetlightModal").addEventListener(
+                "hidden.bs.modal",
+                () => {
+                    this.clearChartPolling();
+                },
+                { once: true }
+            );
+
+            // Adjust chart after modal is shown
             setTimeout(() => {
                 if (this.chargingChart) {
                     this.chargingChart.updateOptions({
@@ -980,6 +1057,9 @@ class StreetlightMap {
                 }
                 window.dispatchEvent(new Event("resize"));
             }, 250);
+
+            // Start chart polling
+            this.startChartPolling(socId);
         } catch (error) {
             console.error("Error loading streetlight details:", error);
         }
@@ -989,11 +1069,27 @@ class StreetlightMap {
         const chartOptions = {
             series: [
                 {
-                    name: "Battery Level",
+                    name: "Battery SOC", // Changed from "Battery Level"
                     data:
                         chargingHistory?.map((h) => ({
                             x: new Date(h.timestamp),
-                            y: h.battery_level,
+                            y: h.battery_soc, // Changed from battery_level
+                        })) || [],
+                },
+                {
+                    name: "Solar Voltage",
+                    data:
+                        chargingHistory?.map((h) => ({
+                            x: new Date(h.timestamp),
+                            y: h.solar_voltage,
+                        })) || [],
+                },
+                {
+                    name: "Battery Voltage",
+                    data:
+                        chargingHistory?.map((h) => ({
+                            x: new Date(h.timestamp),
+                            y: h.battery_voltage,
                         })) || [],
                 },
             ],
@@ -1001,23 +1097,102 @@ class StreetlightMap {
                 type: "line",
                 height: 350,
                 animations: {
-                    enabled: false,
+                    enabled: true,
+                    easing: "linear",
+                    dynamicAnimation: {
+                        speed: 1000,
+                    },
+                },
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true,
+                    },
                 },
             },
+            stroke: {
+                curve: "smooth",
+                width: 2,
+            },
+            colors: ["#00E396", "#FEB019", "#008FFB", "#FF4560"],
             xaxis: {
                 type: "datetime",
-            },
-            yaxis: {
-                title: {
-                    text: "Battery Level (%)",
+                range: 30 * 60 * 1000, // Show last 30 minutes
+                labels: {
+                    datetimeFormatter: {
+                        year: "yyyy",
+                        month: "MMM 'yy",
+                        day: "dd MMM",
+                        hour: "HH:mm",
+                    },
                 },
             },
+            yaxis: [
+                {
+                    title: {
+                        text: "Battery Level (%)",
+                    },
+                    labels: {
+                        formatter: (val) => {
+                            return val != null && !isNaN(val)
+                                ? `${val.toFixed(1)}%`
+                                : "-";
+                        },
+                    },
+                },
+                {
+                    title: {
+                        text: "Voltage (V)",
+                    },
+                    labels: {
+                        formatter: (val) => {
+                            return val != null && !isNaN(val)
+                                ? `${val.toFixed(1)}V`
+                                : "-";
+                        },
+                    },
+                    opposite: true,
+                },
+            ],
             tooltip: {
+                shared: true,
                 x: {
                     format: "dd MMM yyyy HH:mm",
                 },
+                y: {
+                    formatter: function (value, { seriesIndex }) {
+                        if (!value || isNaN(value)) return "-";
+
+                        switch (seriesIndex) {
+                            case 0: // Battery Level
+                                return `${value.toFixed(1)}%`;
+                            case 3: // Current
+                                return `${value.toFixed(2)}A`;
+                            default: // Voltages
+                                return `${value.toFixed(1)}V`;
+                        }
+                    },
+                },
+            },
+            legend: {
+                position: "top",
+                horizontalAlign: "center",
             },
         };
+
+        // Filter out invalid values from the data
+        chartOptions.series = chartOptions.series.map((series) => ({
+            ...series,
+            data: series.data.filter(
+                (point) => point.y != null && !isNaN(point.y) && point.x != null
+            ),
+        }));
 
         if (this.chargingChart) {
             this.chargingChart.updateOptions(chartOptions);
@@ -1027,6 +1202,134 @@ class StreetlightMap {
                 chartOptions
             );
             this.chargingChart.render();
+        }
+    }
+
+    startChartPolling(socId) {
+        if (this.chartPolling) {
+            clearInterval(this.chartPolling);
+        }
+
+        const CHART_POLLING_INTERVAL = 5000;
+        this.chartPolling = setInterval(async () => {
+            try {
+                const response = await window.apiService.getStreetlightDetails(
+                    socId
+                );
+                if (!response?.data) return;
+
+                const data = response.data; // Access data directly
+                if (!data) return;
+
+                // Update status badge with class
+                const statusBadge =
+                    document.getElementById("modal-status-badge");
+                if (statusBadge) {
+                    statusBadge.textContent = data.status;
+                    statusBadge.className = `badge ${this.getStatusBadgeClass(
+                        data.status
+                    )}`;
+                }
+
+                // Update other modal values
+                document.getElementById(
+                    "modal-solv"
+                ).textContent = `${data.solar_voltage}V`;
+                document.getElementById(
+                    "modal-solc"
+                ).textContent = `${data.solar_current}A`;
+                document.getElementById(
+                    "modal-bulbv"
+                ).textContent = `${data.bulb_voltage}V`;
+                document.getElementById(
+                    "modal-curv"
+                ).textContent = `${data.current}A`;
+                document.getElementById(
+                    "modal-batsoc"
+                ).textContent = `${data.battery_soc}%`;
+                document.getElementById(
+                    "modal-batv"
+                ).textContent = `${data.battery_voltage}V`;
+                document.getElementById(
+                    "modal-batc"
+                ).textContent = `${data.battery_current}A`;
+                document.getElementById("modal-last-update").textContent =
+                    new Date(data.last_update).toLocaleString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                    });
+
+                // Update chart with new data
+                if (this.chargingChart && data.last_update) {
+                    const newPoint = {
+                        timestamp: data.last_update,
+                        battery_soc: data.battery_soc,
+                        solar_voltage: data.solar_voltage,
+                        battery_voltage: data.battery_voltage,
+                    };
+
+                    this.chargingChart.appendData([
+                        {
+                            data: [
+                                {
+                                    x: new Date(newPoint.timestamp),
+                                    y: Number(newPoint.battery_soc),
+                                },
+                            ],
+                        },
+                        {
+                            data: [
+                                {
+                                    x: new Date(newPoint.timestamp),
+                                    y: Number(newPoint.solar_voltage),
+                                },
+                            ],
+                        },
+                        {
+                            data: [
+                                {
+                                    x: new Date(newPoint.timestamp),
+                                    y: Number(newPoint.battery_voltage),
+                                },
+                            ],
+                        },
+                    ]);
+
+                    // Keep only last 50 points
+                    if (this.chargingChart.w.globals.series[0].length > 50) {
+                        this.chargingChart.updateSeries([
+                            {
+                                data: this.chargingChart.w.globals.series[0].slice(
+                                    -50
+                                ),
+                            },
+                            {
+                                data: this.chargingChart.w.globals.series[1].slice(
+                                    -50
+                                ),
+                            },
+                            {
+                                data: this.chargingChart.w.globals.series[2].slice(
+                                    -50
+                                ),
+                            },
+                        ]);
+                    }
+                }
+            } catch (error) {
+                console.error("Error updating chart:", error);
+            }
+        }, CHART_POLLING_INTERVAL);
+    }
+
+    clearChartPolling() {
+        if (this.chartPolling) {
+            clearInterval(this.chartPolling);
+            this.chartPolling = null;
         }
     }
 }

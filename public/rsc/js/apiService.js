@@ -89,15 +89,16 @@ class ApiService {
             }
 
             const latestReading = data.latest_reading;
+            // Modified to match the new historical data format
             const historicalData = data.historical_data.map((entry) => ({
-                timestamp: entry.timestamp,
-                battery_level: entry.battery.state_of_charge,
-                battery_voltage: entry.battery.voltage,
-                battery_current: entry.battery.current,
-                solar_voltage: entry.solar.voltage,
-                solar_current: entry.solar.current,
-                bulb_voltage: entry.bulb.voltage,
-                bulb_current: entry.bulb.current,
+                timestamp: entry.date,
+                battery_soc: entry.batsoc,
+                battery_voltage: entry.batv,
+                battery_current: entry.batc,
+                solar_voltage: entry.solv,
+                solar_current: entry.solc,
+                bulb_voltage: entry.bulbv,
+                bulb_current: entry.bulbc,
             }));
 
             return {
