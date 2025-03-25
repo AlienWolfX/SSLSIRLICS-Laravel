@@ -20,6 +20,4 @@ Smart Street Light System which is under the research "RS-Program on Producing A
 
 `cp .env.example .env`
 
-`php artisan key:generate`
-
-`php artisan migration`
+`php artisan migrate`

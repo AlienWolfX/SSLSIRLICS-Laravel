@@ -12,14 +12,6 @@ Route::get('/', function () {
 });
 
 
-// Wala ni in the future
-
-Route::get('/details', function () {
-    return view('details');
-});
-
-
-
 // Authenticated
 
 Route::middleware('auth')->group(function () {
