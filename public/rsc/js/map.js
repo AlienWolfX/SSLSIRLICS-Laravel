@@ -10,12 +10,12 @@ class StreetlightMap {
         };
         this.markers = new Map();
         this.municipalityMarkers = new Map();
-        this.zoomThreshold = 9;
+        this.zoomThreshold = 11;
         this.caragaData = null;
         this.barangayMarkers = new Map();
-        this.municipalityZoomThreshold = 9;
-        this.barangayZoomThreshold = 13;
-        this.detailZoomLevel = 16;
+        this.municipalityZoomThreshold = 8;
+        this.barangayZoomThreshold = 12;
+        this.detailZoomLevel = 14;
         this.lastClickedBarangay = null;
         this.streetlightMarkers = new Map();
         this.initialize();
@@ -183,7 +183,7 @@ class StreetlightMap {
                     );
                     this.map.flyTo(
                         coordinates,
-                        this.barangayZoomThreshold + 1,
+                        this.barangayZoomThreshold,
                         {
                             animate: true,
                             duration: 1,

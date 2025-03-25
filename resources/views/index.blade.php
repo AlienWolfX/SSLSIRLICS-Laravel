@@ -56,11 +56,11 @@
 
 
     <!-- Authentication Modal -->
-    <!-- To show easy to modify ---   <div class="modal show" id="login" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="false" style="display: block;"> -->
-    <div class="modal" id="login" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
-      <!-- To hide and clickable ---   <div class="modal" id="login" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true"> -->
+    <!-- To show easy to modify ---   <div class="modal show" id="login" tabindex="-1" aria-labelledby="loginLabel" aria-hidden="false" style="display: block;"> -->
+    <div class="modal" id="login" tabindex="-1" aria-labelledby="loginLabel" aria-hidden="true">
+      <!-- To hide and clickable ---   <div class="modal" id="login" tabindex="-1" aria-labelledby="loginLabel" aria-hidden="true"> -->
       <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content ">
+        <div class="modal-content-l ">
           <span class = "logo_l">
           <x-application-logo class="rounded-lg shadow-md" />
           </span>
@@ -100,9 +100,9 @@
     </div>
 
 
-    <!-- To show easy to modify ---   <div class="modal show" id="register" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="false" style="display: block;"> -->
-    <div class="modal" id="register" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
-      <!-- To hide and clickable ---   <div class="modal" id="register" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true"> -->
+    <!-- To show easy to modify ---   <div class="modal show" id="register" tabindex="-1" aria-labelledby="registerLabel" aria-hidden="false" style="display: block;"> -->
+    <div class="modal" id="register" tabindex="-1" aria-labelledby="registerLabel" aria-hidden="true">
+      <!-- To hide and clickable ---   <div class="modal" id="register" tabindex="-1" aria-labelledby="registerLabel" aria-hidden="true"> -->
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content-registration  ">
           <span class = "logo_r">

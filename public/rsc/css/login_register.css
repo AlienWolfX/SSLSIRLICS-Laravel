@@ -14,7 +14,7 @@
     width: calc(100% - 2rem);
   }
 
-  .modal-content {
+  .modal-content-l {
     background: transparent;
     border: 2px solid rgba(255, 255, 255, 0.5);
     backdrop-filter: blur(15px);
@@ -104,7 +104,7 @@
       width: calc(100% - 1rem);
     }
     
-    .modal-content {
+    .modal-content-l {
       max-width: 100%;
     }
     .modal-content-registration {
@@ -162,7 +162,7 @@
 
 
 
-  .modal-content {
+  .modal-content-l {
     background: rgba(255, 255, 255, 0.1);
     border: 2px solid rgba(255, 255, 255, 0.5);
     backdrop-filter: blur(15px);
@@ -345,7 +345,7 @@
       width: calc(100% - 2rem);
     }
     
-    .modal-content {
+    .modal-content-l {
       padding: 1rem;
     }
 
@@ -392,7 +392,7 @@
     text-decoration: none;
   }
 
-  .modal-content .icon-close  {
+  .modal-content-l .icon-close  {
     position: absolute;
     top: 0;
     right: 0;
@@ -430,7 +430,7 @@
 
 
   
-  .modal-content {
+  .modal-content-l {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -446,7 +446,7 @@
 
 
 
-  .modal-content .logo_l {
+  .modal-content-l .logo_l {
     position: absolute;
     top: -5px;
     left: 35px;
