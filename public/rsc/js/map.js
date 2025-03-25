@@ -205,7 +205,6 @@ class StreetlightMap {
                 );
             }
 
-            // Hide province markers and show municipality markers
             this.markers.forEach((marker) => marker.setOpacity(0));
             this.municipalityMarkers.forEach((marker) => marker.setOpacity(1));
 
@@ -230,13 +229,11 @@ class StreetlightMap {
                 municipalityCode
             );
 
-            // Clear existing barangay markers
             this.barangayMarkers.forEach((marker) =>
                 this.map.removeLayer(marker)
             );
             this.barangayMarkers.clear();
 
-            // Find province data
             const provinceKey = Object.keys(
                 this.caragaData["13"].province_list
             ).find(
@@ -254,7 +251,6 @@ class StreetlightMap {
             const provinceData =
                 this.caragaData["13"].province_list[provinceKey];
 
-            // Find municipality data
             const municipalityKey = Object.keys(
                 provinceData.municipality_list
             ).find(
@@ -314,12 +310,10 @@ class StreetlightMap {
                     data.coordinates.longitude,
                 ];
 
-                // Get barangay data from API
                 const response = await window.apiService.getBarangayCount(
                     `${provinceCode}/${municipalityCode}/${data.barangay_code}`
                 );
 
-                // Skip if no data or count is 0
                 if (!response?.data || response.data.total_devices === 0) {
                     console.log(`Skipping barangay ${name} - no devices`);
                     continue;
@@ -329,11 +323,9 @@ class StreetlightMap {
                     response?.data?.status_summary || {};
                 const count = response?.data?.total_devices || 0;
 
-                // Create marker with appropriate icon
                 const icon = this.getMarkerIcon(has_inactive, has_maintenance);
                 const marker = L.marker(coordinates, { icon }).addTo(this.map);
 
-                // Create popup with count
                 const popupContent = this.createPopupContent(name, count);
                 marker.bindPopup(
                     L.popup({
@@ -703,6 +695,39 @@ class StreetlightMap {
         }),
     };
 
+    static streetlightIcons = {
+        active: L.icon({
+            iconUrl:
+                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+            shadowUrl:
+                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+            iconSize: [15, 24],
+            iconAnchor: [7, 24],
+            popupAnchor: [1, -20],
+            shadowSize: [24, 24],
+        }),
+        inactive: L.icon({
+            iconUrl:
+                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+            shadowUrl:
+                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+            iconSize: [15, 24],
+            iconAnchor: [7, 24],
+            popupAnchor: [1, -20],
+            shadowSize: [24, 24],
+        }),
+        maintenance: L.icon({
+            iconUrl:
+                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
+            shadowUrl:
+                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+            iconSize: [15, 24],
+            iconAnchor: [7, 24],
+            popupAnchor: [1, -20],
+            shadowSize: [24, 24],
+        }),
+    };
+
     async updatePopupContent(marker, name, path, markerType = "province") {
         if (!marker.isPopupOpen()) return;
 
@@ -728,6 +753,7 @@ class StreetlightMap {
 
     async loadStreetlightMarkers(provinceCode, municipalityCode, barangayCode) {
         try {
+            // Clear existing markers
             this.streetlightMarkers.forEach((marker) =>
                 this.map.removeLayer(marker)
             );
@@ -739,49 +765,36 @@ class StreetlightMap {
                 barangayCode
             );
 
-            if (!response?.data?.devices) {
-                console.log("No streetlight data available");
-                return;
-            }
+            if (!response?.data?.devices?.length) return;
 
-            response.data.devices.forEach((device) => {
-                console.log(`Streetlight ${device.soc_id}:`, {
-                    latitude: device.coordinates.lat,
-                    longitude: device.coordinates.long,
-                });
-            });
-
-            const streetlightIcon = L.icon({
-                iconUrl:
-                    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
-                shadowUrl:
-                    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-                iconSize: [15, 24],
-                iconAnchor: [7, 24],
-                popupAnchor: [1, -20],
-                shadowSize: [24, 24],
-            });
-
-            response.data.devices.forEach((device) => {
+            // Create markers in batch for better performance
+            const markers = response.data.devices.map((device) => {
                 const coordinates = [
                     device.coordinates.lat,
                     device.coordinates.long,
                 ];
 
-                console.log(
-                    `Creating marker for ${device.soc_id} at:`,
-                    coordinates
-                );
+                // Get icon based on status
+                const icon = this.getMarkerIconByStatus(device.status);
+                const marker = L.marker(coordinates, { icon });
 
-                const marker = L.marker(coordinates, {
-                    icon: streetlightIcon,
-                }).addTo(this.map);
+                const statusBadge = `
+                    <span class="badge ${this.getStatusBadgeClass(
+                        device.status
+                    )}">
+                        <i class="fas fa-circle me-1"></i>${device.status}
+                    </span>
+                `;
 
-                marker.bindPopup(`
+                const popupContent = `
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2">
                             <small class="text-muted">SOC ID:</small>
                             <strong>${device.soc_id}</strong>
+                            <div class="mt-1">
+                                <small class="text-muted">Status:</small>
+                                ${statusBadge}
+                            </div>
                             <div class="mt-1">
                                 <small class="text-muted">Location:</small>
                                 <div class="text-secondary">
@@ -789,19 +802,132 @@ class StreetlightMap {
                                     <small>Long: ${device.coordinates.long}</small>
                                 </div>
                             </div>
+                            <div class="mt-2 text-center">
+                                <button onclick="window.location.href='/streetlight/${device.soc_id}'"
+                                        class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-info-circle me-1"></i>More Details
+                                </button>
+                            </div>
                         </div>
                     </div>
-                `);
+                `;
+
+                marker.bindPopup(popupContent, {
+                    closeButton: true,
+                    closeOnClick: false,
+                    autoClose: true,
+                });
+
+                // Store marker with additional metadata
+                marker.deviceData = {
+                    soc_id: device.soc_id,
+                    status: device.status,
+                };
 
                 this.streetlightMarkers.set(device.soc_id, marker);
+                return marker;
             });
 
-            console.log(
-                `Added ${this.streetlightMarkers.size} streetlight markers`
-            );
+            L.featureGroup(markers).addTo(this.map);
+
+            // Start polling for status updates if not already started
+            if (!this.statusPolling) {
+                this.startStatusPolling();
+            }
         } catch (error) {
             console.error("Error loading streetlight markers:", error);
-            console.error("Stack:", error.stack);
+        }
+    }
+
+    startStatusPolling() {
+        const POLLING_INTERVAL = 5000; // 5 seconds
+        this.statusPolling = setInterval(async () => {
+            try {
+                // Get all current streetlight IDs
+                const socIds = Array.from(this.streetlightMarkers.keys());
+
+                // Get status updates from API
+                for (const socId of socIds) {
+                    const response =
+                        await window.apiService.getStreetlightStatus(socId);
+                    if (response?.data?.status) {
+                        const marker = this.streetlightMarkers.get(socId);
+                        if (
+                            marker &&
+                            marker.deviceData.status !== response.data.status
+                        ) {
+                            // Update marker icon and stored status
+                            this.updateMarkerStatus(
+                                marker,
+                                response.data.status
+                            );
+                            marker.deviceData.status = response.data.status;
+
+                            // Update popup if it's open
+                            if (marker.isPopupOpen()) {
+                                const statusBadge = `
+                                    <span class="badge ${this.getStatusBadgeClass(
+                                        response.data.status
+                                    )}">
+                                        <i class="fas fa-circle me-1"></i>${
+                                            response.data.status
+                                        }
+                                    </span>
+                                `;
+                                marker.getPopup().setContent(
+                                    marker
+                                        .getPopup()
+                                        .getContent()
+                                        .replace(
+                                            /<span class="badge[^>]*>[^<]*<\/span>/,
+                                            statusBadge
+                                        )
+                                );
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error updating streetlight statuses:", error);
+            }
+        }, POLLING_INTERVAL);
+    }
+
+    getStatusBadgeClass(status) {
+        switch (status.toLowerCase()) {
+            case "active":
+                return "bg-success";
+            case "inactive":
+                return "bg-danger";
+            case "maintenance":
+                return "bg-warning";
+            default:
+                return "bg-secondary";
+        }
+    }
+
+    getMarkerIconByStatus(status) {
+        switch (status.toLowerCase()) {
+            case "active":
+                return StreetlightMap.streetlightIcons.active;
+            case "inactive":
+                return StreetlightMap.streetlightIcons.inactive;
+            case "maintenance":
+                return StreetlightMap.streetlightIcons.maintenance;
+            default:
+                return StreetlightMap.streetlightIcons.inactive;
+        }
+    }
+
+    updateMarkerStatus(marker, status) {
+        const newIcon = this.getMarkerIconByStatus(status);
+        marker.setIcon(newIcon);
+    }
+
+    clearStatusPolling() {
+        if (this.statusPolling) {
+            clearInterval(this.statusPolling);
+            this.statusPolling = null;
         }
     }
 }

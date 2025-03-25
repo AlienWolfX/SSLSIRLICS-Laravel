@@ -237,6 +237,7 @@ class DeviceController extends Controller
             $formattedDevices = $devices->map(function ($device) {
                 return [
                     'soc_id' => $device->SOCid,
+                    'status' => $device->status,
                     'coordinates' => [
                         'lat' => (float)$device->lat,
                         'long' => (float)$device->long
