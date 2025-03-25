@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="{{ asset ('rsc/css/index.css')}}" />
     <link rel="stylesheet" href="{{ asset ('rsc/css/details.css')}}" />
     <link rel="stylesheet" href="{{ asset ('rsc/css/login_register.css')}}" />
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+
   </head>
   <body>
     {{-- <div class="loading-overlay">
@@ -54,12 +56,16 @@
 
 
     <!-- Authentication Modal -->
-    <!-- To show easy to modify ---   <div class="modal show" id="login" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="false" style="display: block;"> -->
-      <div class="modal" id="login" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
-      <!-- To hide and clickable ---   <div class="modal" id="login" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true"> -->
+    <!-- To show easy to modify ---   <div class="modal show" id="login" tabindex="-1" aria-labelledby="loginLabel" aria-hidden="false" style="display: block;"> -->
+    <div class="modal" id="login" tabindex="-1" aria-labelledby="loginLabel" aria-hidden="true">
+      <!-- To hide and clickable ---   <div class="modal" id="login" tabindex="-1" aria-labelledby="loginLabel" aria-hidden="true"> -->
       <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content ">
-          <span class="icon-close">
+        <div class="modal-content-l ">
+          <span class = "logo_l">
+          <x-application-logo class="rounded-lg shadow-md" />
+          </span>
+          
+          <span class="icon-close mb-5">
               <i class="fa-solid fa-xmark" data-bs-dismiss="modal" aria-label="Close"></i>
                 <!-- To show easy to modify ---   <button type="button" class="btn-close" aria-label="Close"></button> -->
               <!-- <button type="button" class="btn-close" aria-label="Close"></button> -->
@@ -67,8 +73,9 @@
             </span>
             <form class="login-form" id="loginForm" method="POST" action="{{ route('login') }}">
                 @csrf
-                <h2 class="modal-title mt-3 mb-1">Login</h2>
-                <div class="input-box">
+                <h2 class="modal-title_l ">Login</h2>
+              <div class="mt-3"></div>
+                <div class="input-box mt-5">
                     <i class="fa-solid fa-envelope"></i>
                     <input type="email" id="email" name="email" required>
                     <label>Email</label>
@@ -93,21 +100,25 @@
     </div>
 
 
-    <!-- To show easy to modify ---   <div class="modal show" id="register" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="false" style="display: block;"> -->
-      <div class="modal" id="register" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
-      <!-- To hide and clickable ---   <div class="modal" id="register" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true"> -->
+    <!-- To show easy to modify ---   <div class="modal show" id="register" tabindex="-1" aria-labelledby="registerLabel" aria-hidden="false" style="display: block;"> -->
+    <div class="modal" id="register" tabindex="-1" aria-labelledby="registerLabel" aria-hidden="true">
+      <!-- To hide and clickable ---   <div class="modal" id="register" tabindex="-1" aria-labelledby="registerLabel" aria-hidden="true"> -->
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content-registration  ">
+          <span class = "logo_r">
+              <x-application-logo class="rounded-lg shadow-md" />
+          </span>
           <span class="icon-close">
-            <i class="fa-solid fa-xmark" data-bs-dismiss="modal" aria-label="Close" ></i>
+            <i class="fa-solid fa-xmark"  data-bs-dismiss="modal" aria-label="Close" ></i>
               <!-- To show easy to modify ---   <button type="button" class="btn-close" aria-label="Close"></button> -->
             <!-- <button type="button" class="btn-close" aria-label="Close"></button> -->
             <!-- To hide and clickable ---   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
           </span>
           <form class="registration-form" id="registerForm" method="POST" action="{{ route('register') }}">
             @csrf
-            <h2 class="modal-title mt-3 mb-1">Registration</h2>
-            <div class="input-box">
+            <h2 class="modal-title_r">Registration</h2>
+            <div class="mt-4"></div>
+            <div class="input-box mt-5">
                 <i class="fa-solid fa-user"></i>
                 <input type="text" id="name" name="name" required>
                 <label>Name</label>
