@@ -804,7 +804,7 @@ class StreetlightMap {
                                 </div>
                             </div>
                             <div class="mt-2 text-center">
-                                <button onclick="window.location.href='/streetlight/${device.soc_id}'"
+                                <button onclick="streetlightMap.showDetails('${device.soc_id}')"
                                         class="btn btn-primary btn-sm w-100">
                                     <i class="fas fa-info-circle me-1"></i>More Details
                                 </button>
@@ -843,10 +843,8 @@ class StreetlightMap {
         const POLLING_INTERVAL = 5000; // 5 seconds
         this.statusPolling = setInterval(async () => {
             try {
-                // Get all current streetlight IDs
                 const socIds = Array.from(this.streetlightMarkers.keys());
 
-                // Get status updates from API
                 for (const socId of socIds) {
                     const response =
                         await window.apiService.getStreetlightStatus(socId);
@@ -856,7 +854,6 @@ class StreetlightMap {
                             marker &&
                             marker.deviceData.status !== response.data.status
                         ) {
-                            // Update marker icon and stored status
                             this.updateMarkerStatus(
                                 marker,
                                 response.data.status
@@ -928,6 +925,108 @@ class StreetlightMap {
         if (this.statusPolling) {
             clearInterval(this.statusPolling);
             this.statusPolling = null;
+        }
+    }
+
+    async showDetails(socId) {
+        try {
+            const response = await window.apiService.getStreetlightDetails(
+                socId
+            );
+            if (!response?.data) return;
+
+            const data = response.data;
+
+            // Update modal content
+            document.getElementById("modal-barangay-text").textContent =
+                data.location || "-";
+            document.getElementById("modal-solv").textContent =
+                data.solar_voltage || "-";
+            document.getElementById("modal-solc").textContent =
+                data.solar_current || "-";
+            document.getElementById("modal-last-update").textContent =
+                data.last_update || "-";
+            document.getElementById("modal-status-badge").textContent =
+                data.status || "-";
+            document.getElementById(
+                "modal-status-badge"
+            ).className = `badge ${this.getStatusBadgeClass(data.status)}`;
+            document.getElementById("modal-bulbv").textContent =
+                data.bulb_voltage || "-";
+            document.getElementById("modal-curv").textContent =
+                data.current || "-";
+            document.getElementById("modal-batsoc").textContent =
+                data.battery_soc || "-";
+            document.getElementById("modal-batv").textContent =
+                data.battery_voltage || "-";
+            document.getElementById("modal-batc").textContent =
+                data.battery_current || "-";
+
+            // Initialize or update the chart
+            this.initializeOrUpdateChart(data.charging_history);
+
+            // Show the modal
+            const modal = new bootstrap.Modal(
+                document.getElementById("streetlightModal")
+            );
+            modal.show();
+            setTimeout(() => {
+                if (this.chargingChart) {
+                    this.chargingChart.updateOptions({
+                        chart: {
+                            height: "100%",
+                        },
+                    });
+                }
+                window.dispatchEvent(new Event("resize"));
+            }, 250);
+        } catch (error) {
+            console.error("Error loading streetlight details:", error);
+        }
+    }
+
+    initializeOrUpdateChart(chargingHistory) {
+        const chartOptions = {
+            series: [
+                {
+                    name: "Battery Level",
+                    data:
+                        chargingHistory?.map((h) => ({
+                            x: new Date(h.timestamp),
+                            y: h.battery_level,
+                        })) || [],
+                },
+            ],
+            chart: {
+                type: "line",
+                height: 350,
+                animations: {
+                    enabled: false,
+                },
+            },
+            xaxis: {
+                type: "datetime",
+            },
+            yaxis: {
+                title: {
+                    text: "Battery Level (%)",
+                },
+            },
+            tooltip: {
+                x: {
+                    format: "dd MMM yyyy HH:mm",
+                },
+            },
+        };
+
+        if (this.chargingChart) {
+            this.chargingChart.updateOptions(chartOptions);
+        } else {
+            this.chargingChart = new ApexCharts(
+                document.querySelector("#modal-charging-chart"),
+                chartOptions
+            );
+            this.chargingChart.render();
         }
     }
 }

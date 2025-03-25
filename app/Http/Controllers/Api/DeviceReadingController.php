@@ -45,8 +45,8 @@ class DeviceReadingController extends Controller
      */
     public function show(string $socid): JsonResponse
     {
-
         $latestReading = DeviceReading::where('SOCid', $socid)
+            ->with('device') // Add this to eager load the device relationship
             ->latest('date')
             ->first();
 
@@ -56,7 +56,6 @@ class DeviceReadingController extends Controller
                 'message' => 'No readings found for this device'
             ], 404);
         }
-
 
         $historicalData = DeviceReading::where('SOCid', $socid)
             ->where('date', '>=', now()->subHours(24))
