@@ -52,7 +52,7 @@
       </div>
     </nav>
 
-      
+
     <!-- Authentication Modal -->
     <!-- To show easy to modify ---   <div class="modal show" id="login" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="false" style="display: block;"> -->
       <div class="modal" id="login" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
@@ -65,27 +65,28 @@
               <!-- <button type="button" class="btn-close" aria-label="Close"></button> -->
               <!-- To hide and clickable ---   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
             </span>
-            <form class="login-form">
-              <h2 class="modal-title mt-3 mb-1">Login</h2>
-              <div class="input-box">
-                <i class="fa-solid fa-envelope"></i>
-                <input type="email" id="name" required>
-                <label>Email</label>
-              </div>
-              <div class="input-box">
-                <i class="fa-solid fa-lock"></i>
-                <input type="password"  id="password" required>
-                <label>Password</label>
-              </div>
-              <div class="remember-forgot">
-                  <label> <input type="checkbox" id="remember">Remember me</label>
-                  <a href="#" >Forgot Password?</a>        
-              </div>
-              <button type="login" class="btn-login">Login</button>
-              <div class="login-register">
-                <p>Don't have an account? <a href="#" class="register-link">Register</a></p>
-              </div>
-              
+            <form class="login-form" id="loginForm" method="POST" action="{{ route('login') }}">
+                @csrf
+                <h2 class="modal-title mt-3 mb-1">Login</h2>
+                <div class="input-box">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="email" name="email" required>
+                    <label>Email</label>
+                </div>
+                <div class="input-box">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="password" name="password" required>
+                    <label>Password</label>
+                </div>
+                <div class="remember-forgot">
+                    <label><input type="checkbox" id="remember" name="remember">Remember me</label>
+                    <a href="{{ route('password.request') }}">Forgot Password?</a>
+                </div>
+                <div id="loginError" class="alert alert-danger mt-2 d-none"></div>
+                <button type="submit" class="btn-login">Login</button>
+                <div class="login-register">
+                    <p>Don't have an account? <a href="#" class="register-link">Register</a></p>
+                </div>
             </form>
         </div>
       </div>
@@ -103,37 +104,38 @@
             <!-- <button type="button" class="btn-close" aria-label="Close"></button> -->
             <!-- To hide and clickable ---   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
           </span>
-          <form class="registration-form">
+          <form class="registration-form" id="registerForm" method="POST" action="{{ route('register') }}">
+            @csrf
             <h2 class="modal-title mt-3 mb-1">Registration</h2>
             <div class="input-box">
-              <i class="fa-solid fa-user"></i>
-              <input type="text" id="username" required>
-              <label>Username</label>
+                <i class="fa-solid fa-user"></i>
+                <input type="text" id="name" name="name" required>
+                <label>Name</label>
             </div>
             <div class="input-box">
-              <i class="fa-solid fa-envelope"></i>
-              <input type="email" id="name" required>
-              <label>Email</label>
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="email" name="email" required>
+                <label>Email</label>
             </div>
             <div class="input-box">
-            <i class="fa-solid fa-user-lock"></i>
-              <input type="password"  id="password" required>
-              <label>Password</label>
+                <i class="fa-solid fa-user-lock"></i>
+                <input type="password" id="password" name="password" required>
+                <label>Password</label>
             </div>
             <div class="input-box">
-              <i class="fa-solid fa-lock"></i>
-              <input type="password"  id="confirm_password" required>
-              <label>Confirm Password</label>
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="password_confirmation" name="password_confirmation" required>
+                <label>Confirm Password</label>
             </div>
             <div class="remember-forgot-registration">
-                <label> <input type="checkbox" id="remember">I agree to the terms & conditions</label>
+                <label><input type="checkbox" id="terms" name="terms" required>I agree to the terms & conditions</label>
             </div>
-            <button type="register" class="btn-register">Register</button>
+            <div id="registerError" class="alert alert-danger mt-2 d-none"></div>
+            <button type="submit" class="btn-register">Register</button>
             <div class="login-register">
-              <p>Already have an account ? <a href="#" class="login-link">Login</a></p>
+                <p>Already have an account? <a href="#" class="login-link">Login</a></p>
             </div>
-            
-          </form>
+        </form>
       </div>
     </div>
     </div>
