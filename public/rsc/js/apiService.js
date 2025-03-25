@@ -68,9 +68,8 @@ class ApiService {
     ) {
         try {
             const response = await fetch(
-                `${this.baseUrl}${CONFIG.API.ENDPOINTS.SHOW_COORDINATES}/${provinceCode}/${municipalityCode}/${barangayCode}`
+                `${this.baseUrl}/showCoordinates/${provinceCode}/${municipalityCode}/${barangayCode}`
             );
-            if (!response.ok) throw new Error("Network response was not ok");
             return await response.json();
         } catch (error) {
             console.error("Error fetching streetlight coordinates:", error);

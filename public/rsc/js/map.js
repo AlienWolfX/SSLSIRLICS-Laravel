@@ -641,7 +641,6 @@ class StreetlightMap {
             this.map.removeLayer(marker)
         );
 
-        // Don't show any markers at maximum zoom (detail view)
         if (currentZoom >= this.detailZoomLevel) {
             console.log("Detail view - hiding all markers");
             return;
@@ -650,17 +649,13 @@ class StreetlightMap {
         let markersToShow = new Map();
 
         if (currentZoom >= this.barangayZoomThreshold) {
-            // Show barangay markers at medium-high zoom
             markersToShow = this.barangayMarkers;
         } else if (currentZoom >= this.municipalityZoomThreshold) {
-            // Show municipality markers at medium zoom
             markersToShow = this.municipalityMarkers;
         } else {
-            // Show province markers at low zoom
             markersToShow = this.markers;
         }
 
-        // Show appropriate markers
         markersToShow.forEach((marker) => {
             if (marker.options.icon) {
                 marker.addTo(this.map);
@@ -731,35 +726,31 @@ class StreetlightMap {
         marker.getPopup().setContent(popupContent);
     }
 
-    // Add new method to load streetlight markers
     async loadStreetlightMarkers(provinceCode, municipalityCode, barangayCode) {
         try {
-            // Clear existing markers
             this.streetlightMarkers.forEach((marker) =>
                 this.map.removeLayer(marker)
             );
             this.streetlightMarkers.clear();
 
-            const apiUrl = `/api/v1/showCoordinates/${provinceCode}/${municipalityCode}/${barangayCode}`;
-            console.log("Fetching streetlights from:", apiUrl);
+            const response = await window.apiService.getStreetlightCoordinates(
+                provinceCode,
+                municipalityCode,
+                barangayCode
+            );
 
-            const response = await fetch(apiUrl);
-            const data = await response.json();
-
-            if (!data?.data?.devices) {
+            if (!response?.data?.devices) {
                 console.log("No streetlight data available");
                 return;
             }
 
-            // Log all device coordinates
-            data.data.devices.forEach((device) => {
+            response.data.devices.forEach((device) => {
                 console.log(`Streetlight ${device.soc_id}:`, {
                     latitude: device.coordinates.lat,
                     longitude: device.coordinates.long,
                 });
             });
 
-            // Create streetlight icon
             const streetlightIcon = L.icon({
                 iconUrl:
                     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
@@ -771,8 +762,7 @@ class StreetlightMap {
                 shadowSize: [24, 24],
             });
 
-            // Add markers for each streetlight
-            data.data.devices.forEach((device) => {
+            response.data.devices.forEach((device) => {
                 const coordinates = [
                     device.coordinates.lat,
                     device.coordinates.long,
