@@ -218,4 +218,45 @@ class DeviceController extends Controller
             ]
         ]);
     }
+
+    public function showCoordinates(): JsonResponse
+    {
+        try {
+            $devices = Device::query()
+                ->select('SOCid', 'lat', 'long', 'status')
+                ->where('SOCid', 'LIKE', 'ADN-1000-0001%')
+                ->get();
+
+            if ($devices->isEmpty()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No devices found with the specified SOC pattern'
+                ], 404);
+            }
+
+            $formattedDevices = $devices->map(function ($device) {
+                return [
+                    'soc_id' => $device->SOCid,
+                    'coordinates' => [
+                        'lat' => (float)$device->lat,
+                        'long' => (float)$device->long
+                    ],
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'devices' => $formattedDevices,
+                ],
+                'message' => 'Device coordinates retrieved successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve device coordinates',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

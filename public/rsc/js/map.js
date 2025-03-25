@@ -15,8 +15,9 @@ class StreetlightMap {
         this.barangayMarkers = new Map();
         this.municipalityZoomThreshold = 9;
         this.barangayZoomThreshold = 13;
-        this.detailZoomLevel = 16; // Increased for more detail
-        this.lastClickedBarangay = null; // Add this to track clicked barangay
+        this.detailZoomLevel = 16;
+        this.lastClickedBarangay = null;
+        this.streetlightMarkers = new Map();
         this.initialize();
     }
 
@@ -69,7 +70,6 @@ class StreetlightMap {
             if (marker) {
                 marker.setIcon(icon);
             }
-            // ... rest of the method remains the same
         } catch (error) {
             console.error(`Error processing ${data.name}:`, error);
         }
@@ -93,7 +93,6 @@ class StreetlightMap {
             console.group("Loading Municipality Markers");
             console.log("Province Code:", provinceCode);
 
-            // Clear existing markers
             this.municipalityMarkers.forEach((marker) =>
                 this.map.removeLayer(marker)
             );
@@ -115,7 +114,6 @@ class StreetlightMap {
             const provinceData =
                 this.caragaData["13"].province_list[provinceKey];
 
-            // Create markers for each municipality
             for (const [name, data] of Object.entries(
                 provinceData.municipality_list
             )) {
@@ -134,12 +132,10 @@ class StreetlightMap {
                     data.coordinates.longitude,
                 ];
 
-                // Get municipality data from API
                 const response = await window.apiService.getMunicipalityCount(
                     `${provinceCode}/${data.municipality_code}`
                 );
 
-                // Skip if no data or count is 0
                 if (!response?.data || response.data.total_devices === 0) {
                     console.log(`Skipping municipality ${name} - no devices`);
                     continue;
@@ -149,11 +145,9 @@ class StreetlightMap {
                     response?.data?.status_summary || {};
                 const count = response?.data?.total_devices || 0;
 
-                // Create marker with appropriate icon
                 const icon = this.getMarkerIcon(has_inactive, has_maintenance);
                 const marker = L.marker(coordinates, { icon }).addTo(this.map);
 
-                // Create popup with count
                 const popupContent = this.createPopupContent(name, count);
                 marker.bindPopup(
                     L.popup({
@@ -162,23 +156,20 @@ class StreetlightMap {
                     }).setContent(popupContent)
                 );
 
-                marker.on(
-                    "mouseover",
-                    function () {
-                        this.openPopup();
-                        this.setZIndexOffset(1000);
-                        that.updatePopupContent(
-                            this,
-                            name,
-                            `${provinceCode}/${data.municipality_code}`,
-                            "municipality"
-                        );
-                    }.bind(marker)
-                );
+                marker.on("mouseover", () => {
+                    marker.openPopup();
+                    marker.setZIndexOffset(1000);
+                    this.updatePopupContent(
+                        marker,
+                        name,
+                        `${provinceCode}/${data.municipality_code}`,
+                        "municipality"
+                    );
+                });
 
-                marker.on("mouseout", function () {
-                    this.closePopup();
-                    this.setZIndexOffset(0);
+                marker.on("mouseout", () => {
+                    marker.closePopup();
+                    marker.setZIndexOffset(0);
                 });
 
                 marker.on("click", () => {
@@ -194,7 +185,6 @@ class StreetlightMap {
                         coordinates,
                         this.barangayZoomThreshold + 1,
                         {
-                            // Increased zoom level
                             animate: true,
                             duration: 1,
                             complete: () => {
@@ -352,33 +342,39 @@ class StreetlightMap {
                     }).setContent(popupContent)
                 );
 
-                marker.on(
-                    "mouseover",
-                    function () {
-                        this.openPopup();
-                        this.setZIndexOffset(1000);
-                        that.updatePopupContent(
-                            this,
-                            name,
-                            `${provinceCode}/${municipalityCode}/${data.barangay_code}`,
-                            "barangay"
-                        );
-                    }.bind(marker)
-                );
+                marker.on("mouseover", () => {
+                    marker.openPopup();
+                    marker.setZIndexOffset(1000);
+                    this.updatePopupContent(
+                        marker,
+                        name,
+                        `${provinceCode}/${municipalityCode}/${data.barangay_code}`,
+                        "barangay"
+                    );
+                });
 
-                marker.on("mouseout", function () {
-                    this.closePopup();
-                    this.setZIndexOffset(0);
+                marker.on("mouseout", () => {
+                    marker.closePopup();
+                    marker.setZIndexOffset(0);
                 });
 
                 marker.on("click", () => {
-                    this.lastClickedBarangay = marker; // Store clicked marker
+                    this.lastClickedBarangay = marker;
+                    const [province, municipality, barangay] =
+                        markerKey.split("_");
+
+                    this.toggleMarkersVisibility();
+                    this.loadStreetlightMarkers(
+                        province,
+                        municipality,
+                        barangay
+                    );
+
                     this.map.flyTo(coordinates, this.detailZoomLevel, {
                         animate: true,
                         duration: 1,
                         complete: () => {
                             console.log("Zoomed to barangay detail");
-                            this.toggleMarkersVisibility();
                         },
                     });
                 });
@@ -629,12 +625,21 @@ class StreetlightMap {
         const currentZoom = this.map.getZoom();
         console.log("Current zoom level:", currentZoom);
 
-        // Remove all markers first
         this.markers.forEach((marker) => this.map.removeLayer(marker));
         this.municipalityMarkers.forEach((marker) =>
             this.map.removeLayer(marker)
         );
         this.barangayMarkers.forEach((marker) => this.map.removeLayer(marker));
+
+        if (currentZoom >= this.detailZoomLevel) {
+            console.log("Detail view - showing only streetlight markers");
+            this.streetlightMarkers.forEach((marker) => marker.addTo(this.map));
+            return;
+        }
+
+        this.streetlightMarkers.forEach((marker) =>
+            this.map.removeLayer(marker)
+        );
 
         // Don't show any markers at maximum zoom (detail view)
         if (currentZoom >= this.detailZoomLevel) {
@@ -724,5 +729,89 @@ class StreetlightMap {
         const count = response.data.total_devices || 0;
         const popupContent = this.createPopupContent(name, count);
         marker.getPopup().setContent(popupContent);
+    }
+
+    // Add new method to load streetlight markers
+    async loadStreetlightMarkers(provinceCode, municipalityCode, barangayCode) {
+        try {
+            // Clear existing markers
+            this.streetlightMarkers.forEach((marker) =>
+                this.map.removeLayer(marker)
+            );
+            this.streetlightMarkers.clear();
+
+            const apiUrl = `/api/v1/showCoordinates/${provinceCode}/${municipalityCode}/${barangayCode}`;
+            console.log("Fetching streetlights from:", apiUrl);
+
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+
+            if (!data?.data?.devices) {
+                console.log("No streetlight data available");
+                return;
+            }
+
+            // Log all device coordinates
+            data.data.devices.forEach((device) => {
+                console.log(`Streetlight ${device.soc_id}:`, {
+                    latitude: device.coordinates.lat,
+                    longitude: device.coordinates.long,
+                });
+            });
+
+            // Create streetlight icon
+            const streetlightIcon = L.icon({
+                iconUrl:
+                    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
+                shadowUrl:
+                    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+                iconSize: [15, 24],
+                iconAnchor: [7, 24],
+                popupAnchor: [1, -20],
+                shadowSize: [24, 24],
+            });
+
+            // Add markers for each streetlight
+            data.data.devices.forEach((device) => {
+                const coordinates = [
+                    device.coordinates.lat,
+                    device.coordinates.long,
+                ];
+
+                console.log(
+                    `Creating marker for ${device.soc_id} at:`,
+                    coordinates
+                );
+
+                const marker = L.marker(coordinates, {
+                    icon: streetlightIcon,
+                }).addTo(this.map);
+
+                marker.bindPopup(`
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-2">
+                            <small class="text-muted">SOC ID:</small>
+                            <strong>${device.soc_id}</strong>
+                            <div class="mt-1">
+                                <small class="text-muted">Location:</small>
+                                <div class="text-secondary">
+                                    <small>Lat: ${device.coordinates.lat}</small><br>
+                                    <small>Long: ${device.coordinates.long}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+
+                this.streetlightMarkers.set(device.soc_id, marker);
+            });
+
+            console.log(
+                `Added ${this.streetlightMarkers.size} streetlight markers`
+            );
+        } catch (error) {
+            console.error("Error loading streetlight markers:", error);
+            console.error("Stack:", error.stack);
+        }
     }
 }
