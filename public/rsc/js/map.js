@@ -753,7 +753,6 @@ class StreetlightMap {
 
     async loadStreetlightMarkers(provinceCode, municipalityCode, barangayCode) {
         try {
-            // Clear existing markers
             this.streetlightMarkers.forEach((marker) =>
                 this.map.removeLayer(marker)
             );
@@ -767,16 +766,18 @@ class StreetlightMap {
 
             if (!response?.data?.devices?.length) return;
 
-            // Create markers in batch for better performance
             const markers = response.data.devices.map((device) => {
                 const coordinates = [
                     device.coordinates.lat,
                     device.coordinates.long,
                 ];
 
-                // Get icon based on status
                 const icon = this.getMarkerIconByStatus(device.status);
-                const marker = L.marker(coordinates, { icon });
+                const marker = L.marker(coordinates, {
+                    icon,
+                    // Remove riseOnHover for smoother performance
+                    riseOnHover: false,
+                });
 
                 const statusBadge = `
                     <span class="badge ${this.getStatusBadgeClass(
@@ -812,13 +813,13 @@ class StreetlightMap {
                     </div>
                 `;
 
+                // Only show popup on click, remove hover behavior
                 marker.bindPopup(popupContent, {
                     closeButton: true,
-                    closeOnClick: false,
+                    closeOnClick: true,
                     autoClose: true,
                 });
 
-                // Store marker with additional metadata
                 marker.deviceData = {
                     soc_id: device.soc_id,
                     status: device.status,
@@ -830,7 +831,6 @@ class StreetlightMap {
 
             L.featureGroup(markers).addTo(this.map);
 
-            // Start polling for status updates if not already started
             if (!this.statusPolling) {
                 this.startStatusPolling();
             }
