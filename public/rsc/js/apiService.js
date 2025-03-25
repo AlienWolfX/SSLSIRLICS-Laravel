@@ -60,5 +60,106 @@ class ApiService {
             return null;
         }
     }
+
+    async getStreetlightCoordinates(
+        provinceCode,
+        municipalityCode,
+        barangayCode
+    ) {
+        try {
+            const response = await fetch(
+                `${this.baseUrl}/showCoordinates/${provinceCode}/${municipalityCode}/${barangayCode}`
+            );
+            return await response.json();
+        } catch (error) {
+            console.error("Error fetching streetlight coordinates:", error);
+            return null;
+        }
+    }
+
+    async getStreetlightDetails(socId) {
+        try {
+            const response = await fetch(`${this.baseUrl}/readings/${socId}`);
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+            const data = await response.json();
+            if (data.status !== "success") {
+                throw new Error("Failed to fetch streetlight details");
+            }
+
+            const latestReading = data.latest_reading;
+            // Modified to match the new historical data format
+            const historicalData = data.historical_data.map((entry) => ({
+                timestamp: entry.date,
+                battery_soc: entry.batsoc,
+                battery_voltage: entry.batv,
+                battery_current: entry.batc,
+                solar_voltage: entry.solv,
+                solar_current: entry.solc,
+                bulb_voltage: entry.bulbv,
+                bulb_current: entry.bulbc,
+            }));
+
+            return {
+                success: true,
+                data: {
+                    location: latestReading.SOCid,
+                    solar_voltage: latestReading.solv,
+                    solar_current: latestReading.solc,
+                    last_update: latestReading.date,
+                    status: this.capitalizeFirstLetter(
+                        data.latest_reading.device?.status
+                    ),
+                    bulb_voltage: latestReading.bulbv,
+                    current: latestReading.bulbc,
+                    battery_soc: latestReading.batsoc,
+                    battery_voltage: latestReading.batv,
+                    battery_current: latestReading.batc,
+                    charging_history: historicalData,
+                },
+            };
+        } catch (error) {
+            console.error("Error fetching streetlight details:", error);
+            return {
+                success: false,
+                error: error.message,
+            };
+        }
+    }
+
+    capitalizeFirstLetter(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    async getStreetlightStatus(socId) {
+        try {
+            const response = await fetch(
+                `${this.baseUrl}${CONFIG.API.ENDPOINTS.READINGS}/${socId}`
+            );
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+            const data = await response.json();
+            if (data.status !== "success") {
+                throw new Error("Failed to fetch streetlight status");
+            }
+
+            return {
+                success: true,
+                data: {
+                    status: data.latest_reading.device?.status || "unknown",
+                    last_update: data.latest_reading.date,
+                    soc_id: data.latest_reading.SOCid,
+                },
+            };
+        } catch (error) {
+            console.error("Error fetching streetlight status:", error);
+            return {
+                success: false,
+                error: error.message,
+            };
+        }
+    }
 }
 window.apiService = new ApiService();

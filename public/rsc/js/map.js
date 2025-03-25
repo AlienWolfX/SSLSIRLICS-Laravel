@@ -15,8 +15,9 @@ class StreetlightMap {
         this.barangayMarkers = new Map();
         this.municipalityZoomThreshold = 9;
         this.barangayZoomThreshold = 13;
-        this.detailZoomLevel = 16; // Increased for more detail
-        this.lastClickedBarangay = null; // Add this to track clicked barangay
+        this.detailZoomLevel = 16;
+        this.lastClickedBarangay = null;
+        this.streetlightMarkers = new Map();
         this.initialize();
     }
 
@@ -69,7 +70,6 @@ class StreetlightMap {
             if (marker) {
                 marker.setIcon(icon);
             }
-            // ... rest of the method remains the same
         } catch (error) {
             console.error(`Error processing ${data.name}:`, error);
         }
@@ -93,7 +93,6 @@ class StreetlightMap {
             console.group("Loading Municipality Markers");
             console.log("Province Code:", provinceCode);
 
-            // Clear existing markers
             this.municipalityMarkers.forEach((marker) =>
                 this.map.removeLayer(marker)
             );
@@ -115,7 +114,6 @@ class StreetlightMap {
             const provinceData =
                 this.caragaData["13"].province_list[provinceKey];
 
-            // Create markers for each municipality
             for (const [name, data] of Object.entries(
                 provinceData.municipality_list
             )) {
@@ -134,12 +132,10 @@ class StreetlightMap {
                     data.coordinates.longitude,
                 ];
 
-                // Get municipality data from API
                 const response = await window.apiService.getMunicipalityCount(
                     `${provinceCode}/${data.municipality_code}`
                 );
 
-                // Skip if no data or count is 0
                 if (!response?.data || response.data.total_devices === 0) {
                     console.log(`Skipping municipality ${name} - no devices`);
                     continue;
@@ -149,11 +145,9 @@ class StreetlightMap {
                     response?.data?.status_summary || {};
                 const count = response?.data?.total_devices || 0;
 
-                // Create marker with appropriate icon
                 const icon = this.getMarkerIcon(has_inactive, has_maintenance);
                 const marker = L.marker(coordinates, { icon }).addTo(this.map);
 
-                // Create popup with count
                 const popupContent = this.createPopupContent(name, count);
                 marker.bindPopup(
                     L.popup({
@@ -162,23 +156,20 @@ class StreetlightMap {
                     }).setContent(popupContent)
                 );
 
-                marker.on(
-                    "mouseover",
-                    function () {
-                        this.openPopup();
-                        this.setZIndexOffset(1000);
-                        that.updatePopupContent(
-                            this,
-                            name,
-                            `${provinceCode}/${data.municipality_code}`,
-                            "municipality"
-                        );
-                    }.bind(marker)
-                );
+                marker.on("mouseover", () => {
+                    marker.openPopup();
+                    marker.setZIndexOffset(1000);
+                    this.updatePopupContent(
+                        marker,
+                        name,
+                        `${provinceCode}/${data.municipality_code}`,
+                        "municipality"
+                    );
+                });
 
-                marker.on("mouseout", function () {
-                    this.closePopup();
-                    this.setZIndexOffset(0);
+                marker.on("mouseout", () => {
+                    marker.closePopup();
+                    marker.setZIndexOffset(0);
                 });
 
                 marker.on("click", () => {
@@ -194,7 +185,6 @@ class StreetlightMap {
                         coordinates,
                         this.barangayZoomThreshold + 1,
                         {
-                            // Increased zoom level
                             animate: true,
                             duration: 1,
                             complete: () => {
@@ -215,7 +205,6 @@ class StreetlightMap {
                 );
             }
 
-            // Hide province markers and show municipality markers
             this.markers.forEach((marker) => marker.setOpacity(0));
             this.municipalityMarkers.forEach((marker) => marker.setOpacity(1));
 
@@ -240,13 +229,11 @@ class StreetlightMap {
                 municipalityCode
             );
 
-            // Clear existing barangay markers
             this.barangayMarkers.forEach((marker) =>
                 this.map.removeLayer(marker)
             );
             this.barangayMarkers.clear();
 
-            // Find province data
             const provinceKey = Object.keys(
                 this.caragaData["13"].province_list
             ).find(
@@ -264,7 +251,6 @@ class StreetlightMap {
             const provinceData =
                 this.caragaData["13"].province_list[provinceKey];
 
-            // Find municipality data
             const municipalityKey = Object.keys(
                 provinceData.municipality_list
             ).find(
@@ -324,12 +310,10 @@ class StreetlightMap {
                     data.coordinates.longitude,
                 ];
 
-                // Get barangay data from API
                 const response = await window.apiService.getBarangayCount(
                     `${provinceCode}/${municipalityCode}/${data.barangay_code}`
                 );
 
-                // Skip if no data or count is 0
                 if (!response?.data || response.data.total_devices === 0) {
                     console.log(`Skipping barangay ${name} - no devices`);
                     continue;
@@ -339,11 +323,9 @@ class StreetlightMap {
                     response?.data?.status_summary || {};
                 const count = response?.data?.total_devices || 0;
 
-                // Create marker with appropriate icon
                 const icon = this.getMarkerIcon(has_inactive, has_maintenance);
                 const marker = L.marker(coordinates, { icon }).addTo(this.map);
 
-                // Create popup with count
                 const popupContent = this.createPopupContent(name, count);
                 marker.bindPopup(
                     L.popup({
@@ -352,33 +334,39 @@ class StreetlightMap {
                     }).setContent(popupContent)
                 );
 
-                marker.on(
-                    "mouseover",
-                    function () {
-                        this.openPopup();
-                        this.setZIndexOffset(1000);
-                        that.updatePopupContent(
-                            this,
-                            name,
-                            `${provinceCode}/${municipalityCode}/${data.barangay_code}`,
-                            "barangay"
-                        );
-                    }.bind(marker)
-                );
+                marker.on("mouseover", () => {
+                    marker.openPopup();
+                    marker.setZIndexOffset(1000);
+                    this.updatePopupContent(
+                        marker,
+                        name,
+                        `${provinceCode}/${municipalityCode}/${data.barangay_code}`,
+                        "barangay"
+                    );
+                });
 
-                marker.on("mouseout", function () {
-                    this.closePopup();
-                    this.setZIndexOffset(0);
+                marker.on("mouseout", () => {
+                    marker.closePopup();
+                    marker.setZIndexOffset(0);
                 });
 
                 marker.on("click", () => {
-                    this.lastClickedBarangay = marker; // Store clicked marker
+                    this.lastClickedBarangay = marker;
+                    const [province, municipality, barangay] =
+                        markerKey.split("_");
+
+                    this.toggleMarkersVisibility();
+                    this.loadStreetlightMarkers(
+                        province,
+                        municipality,
+                        barangay
+                    );
+
                     this.map.flyTo(coordinates, this.detailZoomLevel, {
                         animate: true,
                         duration: 1,
                         complete: () => {
                             console.log("Zoomed to barangay detail");
-                            this.toggleMarkersVisibility();
                         },
                     });
                 });
@@ -629,14 +617,22 @@ class StreetlightMap {
         const currentZoom = this.map.getZoom();
         console.log("Current zoom level:", currentZoom);
 
-        // Remove all markers first
         this.markers.forEach((marker) => this.map.removeLayer(marker));
         this.municipalityMarkers.forEach((marker) =>
             this.map.removeLayer(marker)
         );
         this.barangayMarkers.forEach((marker) => this.map.removeLayer(marker));
 
-        // Don't show any markers at maximum zoom (detail view)
+        if (currentZoom >= this.detailZoomLevel) {
+            console.log("Detail view - showing only streetlight markers");
+            this.streetlightMarkers.forEach((marker) => marker.addTo(this.map));
+            return;
+        }
+
+        this.streetlightMarkers.forEach((marker) =>
+            this.map.removeLayer(marker)
+        );
+
         if (currentZoom >= this.detailZoomLevel) {
             console.log("Detail view - hiding all markers");
             return;
@@ -645,17 +641,13 @@ class StreetlightMap {
         let markersToShow = new Map();
 
         if (currentZoom >= this.barangayZoomThreshold) {
-            // Show barangay markers at medium-high zoom
             markersToShow = this.barangayMarkers;
         } else if (currentZoom >= this.municipalityZoomThreshold) {
-            // Show municipality markers at medium zoom
             markersToShow = this.municipalityMarkers;
         } else {
-            // Show province markers at low zoom
             markersToShow = this.markers;
         }
 
-        // Show appropriate markers
         markersToShow.forEach((marker) => {
             if (marker.options.icon) {
                 marker.addTo(this.map);
@@ -703,6 +695,39 @@ class StreetlightMap {
         }),
     };
 
+    static streetlightIcons = {
+        active: L.icon({
+            iconUrl:
+                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+            shadowUrl:
+                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+            iconSize: [15, 24],
+            iconAnchor: [7, 24],
+            popupAnchor: [1, -20],
+            shadowSize: [24, 24],
+        }),
+        inactive: L.icon({
+            iconUrl:
+                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+            shadowUrl:
+                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+            iconSize: [15, 24],
+            iconAnchor: [7, 24],
+            popupAnchor: [1, -20],
+            shadowSize: [24, 24],
+        }),
+        maintenance: L.icon({
+            iconUrl:
+                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
+            shadowUrl:
+                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+            iconSize: [15, 24],
+            iconAnchor: [7, 24],
+            popupAnchor: [1, -20],
+            shadowSize: [24, 24],
+        }),
+    };
+
     async updatePopupContent(marker, name, path, markerType = "province") {
         if (!marker.isPopupOpen()) return;
 
@@ -724,5 +749,587 @@ class StreetlightMap {
         const count = response.data.total_devices || 0;
         const popupContent = this.createPopupContent(name, count);
         marker.getPopup().setContent(popupContent);
+    }
+
+    async loadStreetlightMarkers(provinceCode, municipalityCode, barangayCode) {
+        try {
+            this.streetlightMarkers.forEach((marker) =>
+                this.map.removeLayer(marker)
+            );
+            this.streetlightMarkers.clear();
+
+            const response = await window.apiService.getStreetlightCoordinates(
+                provinceCode,
+                municipalityCode,
+                barangayCode
+            );
+
+            if (!response?.data?.devices?.length) return;
+
+            const markers = response.data.devices.map((device) => {
+                const coordinates = [
+                    device.coordinates.lat,
+                    device.coordinates.long,
+                ];
+
+                const icon = this.getMarkerIconByStatus(device.status);
+                const marker = L.marker(coordinates, {
+                    icon,
+                    // Remove riseOnHover for smoother performance
+                    riseOnHover: false,
+                });
+
+                const statusBadge = `
+                    <span class="badge ${this.getStatusBadgeClass(
+                        device.status
+                    )}">
+                        <i class="fas fa-circle me-1"></i>${device.status}
+                    </span>
+                `;
+
+                const popupContent = `
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-2">
+                            <small class="text-muted">SOC ID:</small>
+                            <strong>${device.soc_id}</strong>
+                            <div class="mt-1">
+                                <small class="text-muted">Status:</small>
+                                ${this.getStatusContent(
+                                    device.status,
+                                    device.updated_at
+                                )}
+                            </div>
+                            <div class="mt-2 text-center">
+                                <button onclick="streetlightMap.showDetails('${
+                                    device.soc_id
+                                }')"
+                                        class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-info-circle me-1"></i>More Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Only show popup on click, remove hover behavior
+                marker.bindPopup(popupContent, {
+                    closeButton: true,
+                    closeOnClick: true,
+                    autoClose: true,
+                });
+
+                marker.deviceData = {
+                    soc_id: device.soc_id,
+                    status: device.status,
+                };
+
+                this.streetlightMarkers.set(device.soc_id, marker);
+                return marker;
+            });
+
+            L.featureGroup(markers).addTo(this.map);
+
+            if (!this.statusPolling) {
+                this.startStatusPolling();
+            }
+        } catch (error) {
+            console.error("Error loading streetlight markers:", error);
+        }
+    }
+
+    startStatusPolling() {
+        const POLLING_INTERVAL = 5000; // 5 seconds
+        this.statusPolling = setInterval(async () => {
+            try {
+                const socIds = Array.from(this.streetlightMarkers.keys());
+
+                for (const socId of socIds) {
+                    const response =
+                        await window.apiService.getStreetlightStatus(socId);
+                    if (response?.data?.status) {
+                        const marker = this.streetlightMarkers.get(socId);
+                        if (
+                            marker &&
+                            marker.deviceData.status !== response.data.status
+                        ) {
+                            this.updateMarkerStatus(
+                                marker,
+                                response.data.status
+                            );
+                            marker.deviceData.status = response.data.status;
+
+                            // Update popup if it's open
+                            if (marker.isPopupOpen()) {
+                                const content = this.getStatusContent(
+                                    response.data.status,
+                                    response.data.updated_at
+                                );
+                                const popup = marker.getPopup();
+                                const currentContent = popup.getContent();
+                                const newContent = currentContent.replace(
+                                    /<span class="badge.*?<\/div>/s,
+                                    content
+                                );
+                                popup.setContent(newContent);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error updating streetlight statuses:", error);
+            }
+        }, POLLING_INTERVAL);
+    }
+
+    getStatusBadgeClass(status) {
+        switch (status.toLowerCase()) {
+            case "active":
+                return "bg-success";
+            case "inactive":
+                return "bg-danger";
+            case "maintenance":
+                return "bg-warning";
+            default:
+                return "bg-secondary";
+        }
+    }
+
+    getStatusContent(status, date) {
+        return `
+            <span class="badge ${this.getStatusBadgeClass(status)}">
+                <i class="fas fa-circle me-1"></i>${status}
+            </span>
+        `;
+    }
+
+    getMarkerIconByStatus(status) {
+        switch (status.toLowerCase()) {
+            case "active":
+                return StreetlightMap.streetlightIcons.active;
+            case "inactive":
+                return StreetlightMap.streetlightIcons.inactive;
+            case "maintenance":
+                return StreetlightMap.streetlightIcons.maintenance;
+            default:
+                return StreetlightMap.streetlightIcons.inactive;
+        }
+    }
+
+    updateMarkerStatus(marker, status) {
+        const newIcon = this.getMarkerIconByStatus(status);
+        marker.setIcon(newIcon);
+    }
+
+    clearStatusPolling() {
+        if (this.statusPolling) {
+            clearInterval(this.statusPolling);
+            this.statusPolling = null;
+        }
+    }
+
+    async showDetails(socId) {
+        try {
+            const response = await window.apiService.getStreetlightDetails(
+                socId
+            );
+            if (!response?.data) return;
+
+            const data = response.data;
+
+            // Format the timestamp
+            const lastUpdate = new Date(data.last_update);
+            const formattedDate = lastUpdate.toLocaleString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+            });
+
+            // Helper function to safely format numeric values
+            const formatValue = (value, decimals = 1, unit = "") => {
+                return value != null && !isNaN(value)
+                    ? `${Number(value).toFixed(decimals)}${unit}`
+                    : "-";
+            };
+
+            // Update modal content with latest readings
+            document.getElementById("modal-barangay-text").textContent =
+                data.location || "-";
+            document.getElementById("modal-solv").textContent = formatValue(
+                data.solar_voltage,
+                1,
+                "V"
+            );
+            document.getElementById("modal-solc").textContent = formatValue(
+                data.solar_current,
+                2,
+                "A"
+            );
+            document.getElementById("modal-last-update").textContent =
+                formattedDate;
+            document.getElementById("modal-status-badge").textContent =
+                data.status || "-";
+            document.getElementById(
+                "modal-status-badge"
+            ).className = `badge ${this.getStatusBadgeClass(data.status)}`;
+            document.getElementById("modal-bulbv").textContent = formatValue(
+                data.bulb_voltage,
+                1,
+                "V"
+            );
+            document.getElementById("modal-curv").textContent = formatValue(
+                data.current,
+                2,
+                "A"
+            );
+            document.getElementById("modal-batsoc").textContent = formatValue(
+                data.battery_soc,
+                1,
+                "%"
+            );
+            document.getElementById("modal-batv").textContent = formatValue(
+                data.battery_voltage,
+                1,
+                "V"
+            );
+            document.getElementById("modal-batc").textContent = formatValue(
+                data.battery_current,
+                2,
+                "A"
+            );
+
+            // Process historical data and latest reading for the chart
+            const chargingHistory = data.charging_history || [];
+
+            // Add the latest reading to the history if it exists and has valid values
+            if (
+                data.last_update &&
+                (data.battery_soc != null ||
+                    data.solar_voltage != null ||
+                    data.battery_voltage != null ||
+                    data.current != null)
+            ) {
+                chargingHistory.push({
+                    timestamp: data.last_update,
+                    battery_soc: data.battery_soc,
+                    solar_voltage: data.solar_voltage,
+                    battery_voltage: data.battery_voltage,
+                    current: data.current,
+                });
+            }
+
+            // Sort the data by timestamp
+            chargingHistory.sort(
+                (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+            );
+
+            // Initialize or update the chart with the combined data
+            this.initializeOrUpdateChart(chargingHistory);
+
+            // Show the modal
+            const modal = new bootstrap.Modal(
+                document.getElementById("streetlightModal")
+            );
+
+            // Start real-time updates when modal is shown
+            modal.show();
+            this.startChartPolling(socId);
+
+            // Listen for modal close
+            document.getElementById("streetlightModal").addEventListener(
+                "hidden.bs.modal",
+                () => {
+                    this.clearChartPolling();
+                },
+                { once: true }
+            );
+
+            // Adjust chart after modal is shown
+            setTimeout(() => {
+                if (this.chargingChart) {
+                    this.chargingChart.updateOptions({
+                        chart: {
+                            height: "100%",
+                        },
+                    });
+                }
+                window.dispatchEvent(new Event("resize"));
+            }, 250);
+
+            // Start chart polling
+            this.startChartPolling(socId);
+        } catch (error) {
+            console.error("Error loading streetlight details:", error);
+        }
+    }
+
+    initializeOrUpdateChart(chargingHistory) {
+        const chartOptions = {
+            series: [
+                {
+                    name: "Battery SOC", // Changed from "Battery Level"
+                    data:
+                        chargingHistory?.map((h) => ({
+                            x: new Date(h.timestamp),
+                            y: h.battery_soc, // Changed from battery_level
+                        })) || [],
+                },
+                {
+                    name: "Solar Voltage",
+                    data:
+                        chargingHistory?.map((h) => ({
+                            x: new Date(h.timestamp),
+                            y: h.solar_voltage,
+                        })) || [],
+                },
+                {
+                    name: "Battery Voltage",
+                    data:
+                        chargingHistory?.map((h) => ({
+                            x: new Date(h.timestamp),
+                            y: h.battery_voltage,
+                        })) || [],
+                },
+            ],
+            chart: {
+                type: "line",
+                height: 350,
+                animations: {
+                    enabled: true,
+                    easing: "linear",
+                    dynamicAnimation: {
+                        speed: 1000,
+                    },
+                },
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true,
+                    },
+                },
+            },
+            stroke: {
+                curve: "smooth",
+                width: 2,
+            },
+            colors: ["#00E396", "#FEB019", "#008FFB", "#FF4560"],
+            xaxis: {
+                type: "datetime",
+                range: 30 * 60 * 1000, // Show last 30 minutes
+                labels: {
+                    datetimeFormatter: {
+                        year: "yyyy",
+                        month: "MMM 'yy",
+                        day: "dd MMM",
+                        hour: "HH:mm",
+                    },
+                },
+            },
+            yaxis: [
+                {
+                    title: {
+                        text: "Battery Level (%)",
+                    },
+                    labels: {
+                        formatter: (val) => {
+                            return val != null && !isNaN(val)
+                                ? `${val.toFixed(1)}%`
+                                : "-";
+                        },
+                    },
+                },
+                {
+                    title: {
+                        text: "Voltage (V)",
+                    },
+                    labels: {
+                        formatter: (val) => {
+                            return val != null && !isNaN(val)
+                                ? `${val.toFixed(1)}V`
+                                : "-";
+                        },
+                    },
+                    opposite: true,
+                },
+            ],
+            tooltip: {
+                shared: true,
+                x: {
+                    format: "dd MMM yyyy HH:mm",
+                },
+                y: {
+                    formatter: function (value, { seriesIndex }) {
+                        if (!value || isNaN(value)) return "-";
+
+                        switch (seriesIndex) {
+                            case 0: // Battery Level
+                                return `${value.toFixed(1)}%`;
+                            case 3: // Current
+                                return `${value.toFixed(2)}A`;
+                            default: // Voltages
+                                return `${value.toFixed(1)}V`;
+                        }
+                    },
+                },
+            },
+            legend: {
+                position: "top",
+                horizontalAlign: "center",
+            },
+        };
+
+        // Filter out invalid values from the data
+        chartOptions.series = chartOptions.series.map((series) => ({
+            ...series,
+            data: series.data.filter(
+                (point) => point.y != null && !isNaN(point.y) && point.x != null
+            ),
+        }));
+
+        if (this.chargingChart) {
+            this.chargingChart.updateOptions(chartOptions);
+        } else {
+            this.chargingChart = new ApexCharts(
+                document.querySelector("#modal-charging-chart"),
+                chartOptions
+            );
+            this.chargingChart.render();
+        }
+    }
+
+    startChartPolling(socId) {
+        if (this.chartPolling) {
+            clearInterval(this.chartPolling);
+        }
+
+        const CHART_POLLING_INTERVAL = 5000;
+        this.chartPolling = setInterval(async () => {
+            try {
+                const response = await window.apiService.getStreetlightDetails(
+                    socId
+                );
+                if (!response?.data) return;
+
+                const data = response.data; // Access data directly
+                if (!data) return;
+
+                // Update status badge with class
+                const statusBadge =
+                    document.getElementById("modal-status-badge");
+                if (statusBadge) {
+                    statusBadge.textContent = data.status;
+                    statusBadge.className = `badge ${this.getStatusBadgeClass(
+                        data.status
+                    )}`;
+                }
+
+                // Update other modal values
+                document.getElementById(
+                    "modal-solv"
+                ).textContent = `${data.solar_voltage}V`;
+                document.getElementById(
+                    "modal-solc"
+                ).textContent = `${data.solar_current}A`;
+                document.getElementById(
+                    "modal-bulbv"
+                ).textContent = `${data.bulb_voltage}V`;
+                document.getElementById(
+                    "modal-curv"
+                ).textContent = `${data.current}A`;
+                document.getElementById(
+                    "modal-batsoc"
+                ).textContent = `${data.battery_soc}%`;
+                document.getElementById(
+                    "modal-batv"
+                ).textContent = `${data.battery_voltage}V`;
+                document.getElementById(
+                    "modal-batc"
+                ).textContent = `${data.battery_current}A`;
+                document.getElementById("modal-last-update").textContent =
+                    new Date(data.last_update).toLocaleString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                    });
+
+                // Update chart with new data
+                if (this.chargingChart && data.last_update) {
+                    const newPoint = {
+                        timestamp: data.last_update,
+                        battery_soc: data.battery_soc,
+                        solar_voltage: data.solar_voltage,
+                        battery_voltage: data.battery_voltage,
+                    };
+
+                    this.chargingChart.appendData([
+                        {
+                            data: [
+                                {
+                                    x: new Date(newPoint.timestamp),
+                                    y: Number(newPoint.battery_soc),
+                                },
+                            ],
+                        },
+                        {
+                            data: [
+                                {
+                                    x: new Date(newPoint.timestamp),
+                                    y: Number(newPoint.solar_voltage),
+                                },
+                            ],
+                        },
+                        {
+                            data: [
+                                {
+                                    x: new Date(newPoint.timestamp),
+                                    y: Number(newPoint.battery_voltage),
+                                },
+                            ],
+                        },
+                    ]);
+
+                    // Keep only last 50 points
+                    if (this.chargingChart.w.globals.series[0].length > 50) {
+                        this.chargingChart.updateSeries([
+                            {
+                                data: this.chargingChart.w.globals.series[0].slice(
+                                    -50
+                                ),
+                            },
+                            {
+                                data: this.chargingChart.w.globals.series[1].slice(
+                                    -50
+                                ),
+                            },
+                            {
+                                data: this.chargingChart.w.globals.series[2].slice(
+                                    -50
+                                ),
+                            },
+                        ]);
+                    }
+                }
+            } catch (error) {
+                console.error("Error updating chart:", error);
+            }
+        }, CHART_POLLING_INTERVAL);
+    }
+
+    clearChartPolling() {
+        if (this.chartPolling) {
+            clearInterval(this.chartPolling);
+            this.chartPolling = null;
+        }
     }
 }

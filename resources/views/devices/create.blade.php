@@ -11,45 +11,50 @@
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     <form method="POST" action="{{ route('devices.store') }}" class="space-y-6">
                         @csrf
-                        
-                        <div>
-                            <x-input-label for="SOCid" value="SOC ID" />
-                            <x-text-input id="SOCid" name="SOCid" type="text" class="mt-1 block w-full" required />
-                            <x-input-error :messages="$errors->get('SOCid')" class="mt-2" />
+
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between">
+                                <x-input-label for="SOCid" value="SOC ID" class="text-lg font-semibold"/>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">Unique Identifier</span>
+                            </div>
+                            <div class="mt-2">
+                                <x-text-input
+                                    id="SOCid"
+                                    name="SOCid"
+                                    type="text"
+                                    class="mt-1 block w-full"
+                                    required
+                                    placeholder="Enter SOC ID"
+                                />
+                                <x-input-error :messages="$errors->get('SOCid')" class="mt-2" />
+                            </div>
                         </div>
 
                         <div>
-                            <x-input-label for="SOCadd" value="Address" />
+                            <x-input-label for="SOCadd" value="Landmark/Street" />
                             <x-text-input id="SOCadd" name="SOCadd" type="text" class="mt-1 block w-full" required />
                             <x-input-error :messages="$errors->get('SOCadd')" class="mt-2" />
                         </div>
 
                         <div>
                             <x-input-label for="date_installed" value="Date Installed" />
-                            <x-text-input 
-                                id="date_installed" 
-                                name="date_installed" 
-                                type="date" 
-                                class="mt-1 block w-full" 
+                            <x-text-input
+                                id="date_installed"
+                                name="date_installed"
+                                type="date"
+                                class="mt-1 block w-full"
                                 value="{{ now()->format('Y-m-d') }}"
-                                required 
+                                required
                             />
                             <x-input-error :messages="$errors->get('date_installed')" class="mt-2" />
                         </div>
 
-                        <div>
-                            <x-input-label for="status" value="Status" />
-                            <select 
-                                id="status" 
-                                name="status" 
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                            >
-                                <option value="active" selected>Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="maintenance">Maintenance</option>
-                            </select>
-                            <x-input-error :messages="$errors->get('status')" class="mt-2" />
-                        </div>
+                        <input
+                        type="hidden"
+                        id="status"
+                        name="status"
+                        value="active"
+                    />
 
                         <div>
                             <x-input-label for="lat" value="Latitude" />

@@ -45,8 +45,8 @@ class DeviceReadingController extends Controller
      */
     public function show(string $socid): JsonResponse
     {
-
         $latestReading = DeviceReading::where('SOCid', $socid)
+            ->with('device')
             ->latest('date')
             ->first();
 
@@ -57,27 +57,22 @@ class DeviceReadingController extends Controller
             ], 404);
         }
 
-
         $historicalData = DeviceReading::where('SOCid', $socid)
             ->where('date', '>=', now()->subHours(24))
             ->orderBy('date')
             ->get()
             ->map(function ($reading) {
                 return [
-                    'timestamp' => $reading->date->format('Y-m-d H:i:s'),
-                    'bulb' => [
-                        'voltage' => $reading->bulbv,
-                        'current' => $reading->bulbc
-                    ],
-                    'solar' => [
-                        'voltage' => $reading->solv,
-                        'current' => $reading->solc
-                    ],
-                    'battery' => [
-                        'voltage' => $reading->batv,
-                        'current' => $reading->batc,
-                        'state_of_charge' => $reading->soc
-                    ]
+                    'id' => $reading->id,
+                    'SOCid' => $reading->SOCid,
+                    'bulbv' => $reading->bulbv,
+                    'bulbc' => $reading->bulbc,
+                    'solv' => $reading->solv,
+                    'solc' => $reading->solc,
+                    'batv' => $reading->batv,
+                    'batc' => $reading->batc,
+                    'batsoc' => $reading->batsoc,
+                    'date' => $reading->date->format('Y-m-d\TH:i:s.u\Z'),
                 ];
             });
 
