@@ -16,8 +16,10 @@ Smart Street Light System which is under the research "RS-Program on Producing A
 
 `composer install`
 
+`npm install -D vite`
+
 `cp .env.example .env`
 
 `php artisan key:generate`
 
-`php artisan make:migration`
+`php artisan migration`
