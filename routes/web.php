@@ -12,7 +12,6 @@ Route::get('/', function () {
 });
 
 
-
 // Authenticated
 
 Route::middleware('auth')->group(function () {

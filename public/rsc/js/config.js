@@ -6,6 +6,7 @@ const CONFIG = {
             MUNICIPALITY_COUNT: "/municipality_count",
             BARANGAY_COUNT: "/barangay_count",
             READINGS: "/readings",
+            SHOW_COORDINATES: "/showCoordinates",
         },
     },
 };

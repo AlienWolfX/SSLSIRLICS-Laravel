@@ -14,21 +14,32 @@
                         @method('PUT')
 
                         <!-- SOC ID -->
-                        <div>
-                            <x-input-label for="SOCid" value="SOC ID" />
-                            <x-text-input id="SOCid" name="SOCid" type="text" 
-                                class="mt-1 block w-full" 
-                                value="{{ old('SOCid', $device->SOCid) }}" 
-                                required />
-                            <x-input-error :messages="$errors->get('SOCid')" class="mt-2" />
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between">
+                                <x-input-label for="SOCid" value="SOC ID" class="text-lg font-semibold"/>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">Unique Identifier</span>
+                            </div>
+                            <div class="mt-2">
+                                <x-text-input id="SOCid"
+                                    type="text"
+                                    class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
+                                    value="{{ $device->SOCid }}"
+                                    disabled
+                                />
+                                <input type="hidden" name="SOCid" value="{{ $device->SOCid }}" />
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                SOC ID cannot be modified after creation
+                            </p>
                         </div>
 
                         <!-- Address -->
                         <div>
                             <x-input-label for="SOCadd" value="Address" />
-                            <x-text-input id="SOCadd" name="SOCadd" type="text" 
-                                class="mt-1 block w-full" 
-                                value="{{ old('SOCadd', $device->SOCadd) }}" 
+                            <x-text-input id="SOCadd" name="SOCadd" type="text"
+                                class="mt-1 block w-full"
+                                value="{{ old('SOCadd', $device->SOCadd) }}"
                                 required />
                             <x-input-error :messages="$errors->get('SOCadd')" class="mt-2" />
                         </div>
@@ -36,9 +47,9 @@
                         <!-- Date Installed -->
                         <div>
                             <x-input-label for="date_installed" value="Date Installed" />
-                            <x-text-input id="date_installed" name="date_installed" type="date" 
-                                class="mt-1 block w-full" 
-                                value="{{ old('date_installed', $device->date_installed->format('Y-m-d')) }}" 
+                            <x-text-input id="date_installed" name="date_installed" type="date"
+                                class="mt-1 block w-full"
+                                value="{{ old('date_installed', $device->date_installed->format('Y-m-d')) }}"
                                 required />
                             <x-input-error :messages="$errors->get('date_installed')" class="mt-2" />
                         </div>
@@ -46,7 +57,7 @@
                         <!-- Status -->
                         <div>
                             <x-input-label for="status" value="Status" />
-                            <select id="status" name="status" 
+                            <select id="status" name="status"
                                 class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                                 <option value="active" {{ old('status', $device->status) === 'active' ? 'selected' : '' }}>Active</option>
                                 <option value="inactive" {{ old('status', $device->status) === 'inactive' ? 'selected' : '' }}>Inactive</option>
@@ -60,16 +71,16 @@
                             <div>
                                 <x-input-label for="lat" value="Latitude" />
                                 <x-text-input id="lat" name="lat" type="number" step="0.00000001"
-                                    class="mt-1 block w-full" 
-                                    value="{{ old('lat', $device->lat) }}" 
+                                    class="mt-1 block w-full"
+                                    value="{{ old('lat', $device->lat) }}"
                                     required />
                                 <x-input-error :messages="$errors->get('lat')" class="mt-2" />
                             </div>
                             <div>
                                 <x-input-label for="long" value="Longitude" />
                                 <x-text-input id="long" name="long" type="number" step="0.00000001"
-                                    class="mt-1 block w-full" 
-                                    value="{{ old('long', $device->long) }}" 
+                                    class="mt-1 block w-full"
+                                    value="{{ old('long', $device->long) }}"
                                     required />
                                 <x-input-error :messages="$errors->get('long')" class="mt-2" />
                             </div>
@@ -77,7 +88,7 @@
 
                         <!-- Buttons -->
                         <div class="flex items-center justify-end gap-4">
-                            <a href="{{ route('dashboard') }}" 
+                            <a href="{{ route('dashboard') }}"
                                 class="inline-flex items-center px-4 py-2 bg-gray-800 dark:bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-white dark:text-gray-800 uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
                                 Cancel
                             </a>

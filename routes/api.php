@@ -18,6 +18,7 @@ Route::prefix('v1')->group(function () {
 
     # Map and Information stuff
     Route::get('/getAllDevice', [DeviceController::class,'getAllDevice']);
+    Route::get('/showCoordinates/{province}/{municipality}/{barangay}', [DeviceController::class,'showCoordinates']);
     Route::get('/province_count/{province}', [DeviceController::class, 'province_count']);
     Route::get('/municipality_count/{province}/{municipality}', [DeviceController::class, 'municipality_count']);
     Route::get('/barangay_count/{province}/{municipality}/{barangay}', [DeviceController::class, 'barangay_count']);
