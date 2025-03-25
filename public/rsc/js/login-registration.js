@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const registerModal = document.getElementById('register');
     
     // Get all interactive elements
-    const registerLink = document.querySelector('.register-link');
-    const loginLink = document.querySelector('.login-link');
+    const registerLinks = document.querySelectorAll('.register-link'); // Changed to querySelectorAll
+    const loginLinks = document.querySelectorAll('.login-link');
     const loginButton = document.querySelector('[data-bs-target="#login"]');
     const registerButton = document.querySelector('[data-bs-target="#register"]');
     const closeButtons = document.querySelectorAll('.icon-close');
@@ -41,25 +41,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 150); // Reduced delay for smoother transition
     };
     
-    // Get all register links (both from login modal and any other locations)
-    const registerLinks = document.querySelectorAll('.register-link');
-    const loginLinks = document.querySelectorAll('.login-link');
-
-    // Register link click handlers
-    registerLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            switchModals(loginBsModal, registerBsModal);
+    // Register link click handlers - Now properly selecting all register links
+    if (registerLinks.length > 0) {
+        registerLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Register link clicked'); // Debug log
+                switchModals(loginBsModal, registerBsModal);
+            });
         });
-    });
+    }
     
     // Login link click handlers
-    loginLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            switchModals(registerBsModal, loginBsModal);
+    if (loginLinks.length > 0) {
+        loginLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Login link clicked'); // Debug log
+                switchModals(registerBsModal, loginBsModal);
+            });
         });
-    });
+    }
 
     // Close button handlers
     closeButtons.forEach(button => {
@@ -117,6 +119,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // Add this debug check
+    console.log('Found register links:', registerLinks.length);
+    console.log('Found login links:', loginLinks.length);
 });
 
 //--------------------Switching between Login and Register Modals close----------------------//

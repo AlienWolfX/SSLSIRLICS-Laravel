@@ -173,6 +173,7 @@
     border-radius: 20px;
     width: 350px;
     height: 425px;
+    pointer-events: auto; /* Ensure form elements are clickable */
   }
 
   .modal-content-registration {
