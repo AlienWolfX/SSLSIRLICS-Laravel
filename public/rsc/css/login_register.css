@@ -48,12 +48,6 @@
     padding-bottom: 1rem;
   }
 
-  .modal-title {
-    width: 100%;
-    text-align: center;
-    color: #333;
-    font-weight: bold;
-  }
 
   .modal-body {
     padding: 1.5rem;
@@ -178,7 +172,7 @@
     padding: 1.5rem;
     border-radius: 20px;
     width: 350px;
-    height: 440px;
+    height: 425px;
   }
 
   .modal-content-registration {
@@ -448,4 +442,49 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+  }
+
+
+
+  .modal-content .logo_l {
+    position: absolute;
+    top: -5px;
+    left: 35px;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 1;
+
+  }
+  
+  .modal-title_l {
+    position: absolute;
+    top: 40px;
+    right: 95px;
+    color: #333;
+    font-weight: bold;
+  }
+
+  
+  .modal-title_r {
+    position: absolute;
+    top: 50px;
+    right: 75px;
+    color: #333;
+    font-weight: bold;
+  }
+
+  .modal-content-registration .logo_r {
+    position: absolute;
+    top: 8px;
+    left: 25px;
+    font-size: 1.5em;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 1;
   }
