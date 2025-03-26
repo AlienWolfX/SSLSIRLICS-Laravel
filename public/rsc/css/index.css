@@ -107,3 +107,63 @@ body {
     color: black !important;
     margin: 5px !important;
 }
+
+/* Location display styling */
+.location-section {
+    position: relative;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.location-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.25rem;
+}
+
+.location-text {
+    line-height: 1.3;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    word-break: break-word;
+}
+
+.landmark-text {
+    font-style: italic;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.socid-container {
+    margin-top: 0.5rem;
+}
+
+.socid-badge {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    font-family: monospace;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
+
+.location-directions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #0d6efd;
+    font-size: 0.75em;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.location-directions:hover {
+    background-color: #e9ecef;
+    color: #0a58ca;
+    transform: scale(1.1);
+}

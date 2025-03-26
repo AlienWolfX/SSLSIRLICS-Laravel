@@ -321,18 +321,14 @@ class StreetlightMap {
                         provinceCode,
                         data.municipality_code
                     );
-                    this.map.flyTo(
-                        coordinates,
-                        this.barangayZoomThreshold,
-                        {
-                            animate: true,
-                            duration: 1,
-                            complete: () => {
-                                console.log("Fly animation complete");
-                                this.toggleMarkersVisibility();
-                            },
-                        }
-                    );
+                    this.map.flyTo(coordinates, this.barangayZoomThreshold, {
+                        animate: true,
+                        duration: 1,
+                        complete: () => {
+                            console.log("Fly animation complete");
+                            this.toggleMarkersVisibility();
+                        },
+                    });
                 });
 
                 const markerKey = `${provinceCode}_${data.municipality_code}`;
@@ -900,6 +896,8 @@ class StreetlightMap {
 
             if (!response?.data?.devices?.length) return;
 
+            console.log("Streetlight data:", response.data);
+
             const markers = response.data.devices.map((device) => {
                 const coordinates = [
                     device.coordinates.lat,
@@ -909,7 +907,6 @@ class StreetlightMap {
                 const icon = this.getMarkerIconByStatus(device.status);
                 const marker = L.marker(coordinates, {
                     icon,
-                    // Remove riseOnHover for smoother performance
                     riseOnHover: false,
                 });
 
@@ -1070,27 +1067,42 @@ class StreetlightMap {
 
             const data = response.data;
 
-            // Format the timestamp
-            const lastUpdate = new Date(data.last_update);
-            const formattedDate = lastUpdate.toLocaleString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-            });
+            console.log("Streetlight details:", data);
 
-            // Helper function to safely format numeric values
+            const dateComponents = data.last_update.split("T")[0].split("-");
+            const timeComponents = data.last_update
+                .split("T")[1]
+                .split(".")[0]
+                .split(":");
+            const year = parseInt(dateComponents[0]);
+            const month = parseInt(dateComponents[1]) - 1; // Month is 0-based in JS Date
+            const day = parseInt(dateComponents[2]);
+            const hour = parseInt(timeComponents[0]);
+            const minute = parseInt(timeComponents[1]);
+            const second = parseInt(timeComponents[2]);
+
+            const formattedDate = `${day} ${new Intl.DateTimeFormat("en-US", {
+                month: "short",
+            }).format(new Date(year, month))} ${year}, ${hour
+                .toString()
+                .padStart(2, "0")}:${minute
+                .toString()
+                .padStart(2, "0")}:${second.toString().padStart(2, "0")}`;
+
             const formatValue = (value, decimals = 1, unit = "") => {
                 return value != null && !isNaN(value)
                     ? `${Number(value).toFixed(decimals)}${unit}`
                     : "-";
             };
 
-            // Update modal content with latest readings
-            document.getElementById("modal-barangay-text").textContent =
+            document.getElementById("modal-location").textContent =
                 data.location || "-";
+            document.getElementById("modal-socid").textContent =
+                data.socid || "-";
+
+            document.getElementById("modal-landmark").textContent =
+                data.landmark || "-";
+
             document.getElementById("modal-solv").textContent = formatValue(
                 data.solar_voltage,
                 1,
@@ -1200,31 +1212,53 @@ class StreetlightMap {
     }
 
     initializeOrUpdateChart(chargingHistory) {
+        // Filter out invalid data points first
+        const validHistory = chargingHistory.filter(
+            (h) =>
+                h &&
+                h.timestamp &&
+                ((h.battery_soc != null && !isNaN(h.battery_soc)) ||
+                    (h.solar_voltage != null && !isNaN(h.solar_voltage)) ||
+                    (h.battery_voltage != null && !isNaN(h.battery_voltage)))
+        );
+
+        const batterySocData = validHistory.map((h) => ({
+            x: new Date(h.timestamp),
+            y:
+                h.battery_soc != null && !isNaN(h.battery_soc)
+                    ? Number(h.battery_soc)
+                    : null,
+        }));
+
+        const solarVoltageData = validHistory.map((h) => ({
+            x: new Date(h.timestamp),
+            y:
+                h.solar_voltage != null && !isNaN(h.solar_voltage)
+                    ? Number(h.solar_voltage)
+                    : null,
+        }));
+
+        const batteryVoltageData = validHistory.map((h) => ({
+            x: new Date(h.timestamp),
+            y:
+                h.battery_voltage != null && !isNaN(h.battery_voltage)
+                    ? Number(h.battery_voltage)
+                    : null,
+        }));
+
         const chartOptions = {
             series: [
                 {
-                    name: "Battery SOC", // Changed from "Battery Level"
-                    data:
-                        chargingHistory?.map((h) => ({
-                            x: new Date(h.timestamp),
-                            y: h.battery_soc, // Changed from battery_level
-                        })) || [],
+                    name: "Battery SOC",
+                    data: batterySocData,
                 },
                 {
                     name: "Solar Voltage",
-                    data:
-                        chargingHistory?.map((h) => ({
-                            x: new Date(h.timestamp),
-                            y: h.solar_voltage,
-                        })) || [],
+                    data: solarVoltageData,
                 },
                 {
                     name: "Battery Voltage",
-                    data:
-                        chargingHistory?.map((h) => ({
-                            x: new Date(h.timestamp),
-                            y: h.battery_voltage,
-                        })) || [],
+                    data: batteryVoltageData,
                 },
             ],
             chart: {
@@ -1279,6 +1313,9 @@ class StreetlightMap {
                                 : "-";
                         },
                     },
+                    forceNiceScale: true,
+                    min: undefined,
+                    max: undefined,
                 },
                 {
                     title: {
@@ -1292,6 +1329,9 @@ class StreetlightMap {
                         },
                     },
                     opposite: true,
+                    forceNiceScale: true,
+                    min: undefined,
+                    max: undefined,
                 },
             ],
             tooltip: {
@@ -1301,7 +1341,7 @@ class StreetlightMap {
                 },
                 y: {
                     formatter: function (value, { seriesIndex }) {
-                        if (!value || isNaN(value)) return "-";
+                        if (value === null || isNaN(value)) return "-";
 
                         switch (seriesIndex) {
                             case 0: // Battery Level
@@ -1318,15 +1358,18 @@ class StreetlightMap {
                 position: "top",
                 horizontalAlign: "center",
             },
+            noData: {
+                text: "No data available",
+                align: "center",
+                verticalAlign: "middle",
+                offsetX: 0,
+                offsetY: 0,
+                style: {
+                    color: "#888",
+                    fontSize: "14px",
+                },
+            },
         };
-
-        // Filter out invalid values from the data
-        chartOptions.series = chartOptions.series.map((series) => ({
-            ...series,
-            data: series.data.filter(
-                (point) => point.y != null && !isNaN(point.y) && point.x != null
-            ),
-        }));
 
         if (this.chargingChart) {
             this.chargingChart.updateOptions(chartOptions);
@@ -1344,6 +1387,9 @@ class StreetlightMap {
             clearInterval(this.chartPolling);
         }
 
+        // Track last update timestamp to avoid unnecessary updates
+        let lastUpdateTimestamp = null;
+
         const CHART_POLLING_INTERVAL = 5000;
         this.chartPolling = setInterval(async () => {
             try {
@@ -1352,112 +1398,183 @@ class StreetlightMap {
                 );
                 if (!response?.data) return;
 
-                const data = response.data; // Access data directly
-                if (!data) return;
+                const data = response.data;
+                if (!data || !data.last_update) return;
 
-                // Update status badge with class
-                const statusBadge =
-                    document.getElementById("modal-status-badge");
-                if (statusBadge) {
-                    statusBadge.textContent = data.status;
-                    statusBadge.className = `badge ${this.getStatusBadgeClass(
-                        data.status
-                    )}`;
-                }
+                // Check if this is a new data point by comparing timestamps
+                const currentTimestamp = new Date(data.last_update).getTime();
+                const isNewData = lastUpdateTimestamp !== currentTimestamp;
 
-                // Update other modal values
-                document.getElementById(
-                    "modal-solv"
-                ).textContent = `${data.solar_voltage}V`;
-                document.getElementById(
-                    "modal-solc"
-                ).textContent = `${data.solar_current}A`;
-                document.getElementById(
-                    "modal-bulbv"
-                ).textContent = `${data.bulb_voltage}V`;
-                document.getElementById(
-                    "modal-curv"
-                ).textContent = `${data.current}A`;
-                document.getElementById(
-                    "modal-batsoc"
-                ).textContent = `${data.battery_soc}%`;
-                document.getElementById(
-                    "modal-batv"
-                ).textContent = `${data.battery_voltage}V`;
-                document.getElementById(
-                    "modal-batc"
-                ).textContent = `${data.battery_current}A`;
-                document.getElementById("modal-last-update").textContent =
-                    new Date(data.last_update).toLocaleString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                    });
+                // Only process UI updates if there's actually new data
+                if (isNewData) {
+                    lastUpdateTimestamp = currentTimestamp;
 
-                // Update chart with new data
-                if (this.chargingChart && data.last_update) {
-                    const newPoint = {
-                        timestamp: data.last_update,
-                        battery_soc: data.battery_soc,
-                        solar_voltage: data.solar_voltage,
-                        battery_voltage: data.battery_voltage,
+                    // Format values
+                    const formatValue = (value, decimals = 1, unit = "") => {
+                        return value != null && !isNaN(value)
+                            ? `${Number(value).toFixed(decimals)}${unit}`
+                            : "-";
                     };
 
-                    this.chargingChart.appendData([
-                        {
-                            data: [
-                                {
-                                    x: new Date(newPoint.timestamp),
-                                    y: Number(newPoint.battery_soc),
-                                },
-                            ],
-                        },
-                        {
-                            data: [
-                                {
-                                    x: new Date(newPoint.timestamp),
-                                    y: Number(newPoint.solar_voltage),
-                                },
-                            ],
-                        },
-                        {
-                            data: [
-                                {
-                                    x: new Date(newPoint.timestamp),
-                                    y: Number(newPoint.battery_voltage),
-                                },
-                            ],
-                        },
-                    ]);
+                    // Update status badge with class
+                    const statusBadge =
+                        document.getElementById("modal-status-badge");
+                    if (statusBadge) {
+                        statusBadge.textContent = data.status;
+                        statusBadge.className = `badge ${this.getStatusBadgeClass(
+                            data.status
+                        )}`;
+                    }
 
-                    // Keep only last 50 points
-                    if (this.chargingChart.w.globals.series[0].length > 50) {
-                        this.chargingChart.updateSeries([
-                            {
-                                data: this.chargingChart.w.globals.series[0].slice(
-                                    -50
-                                ),
-                            },
-                            {
-                                data: this.chargingChart.w.globals.series[1].slice(
-                                    -50
-                                ),
-                            },
-                            {
-                                data: this.chargingChart.w.globals.series[2].slice(
-                                    -50
-                                ),
-                            },
-                        ]);
+                    // Update other modal values safely
+                    document.getElementById("modal-solv").textContent =
+                        formatValue(data.solar_voltage, 1, "V");
+                    document.getElementById("modal-solc").textContent =
+                        formatValue(data.solar_current, 2, "A");
+                    document.getElementById("modal-bulbv").textContent =
+                        formatValue(data.bulb_voltage, 1, "V");
+                    document.getElementById("modal-curv").textContent =
+                        formatValue(data.current, 2, "A");
+                    document.getElementById("modal-batsoc").textContent =
+                        formatValue(data.battery_soc, 1, "%");
+                    document.getElementById("modal-batv").textContent =
+                        formatValue(data.battery_voltage, 1, "V");
+                    document.getElementById("modal-batc").textContent =
+                        formatValue(data.battery_current, 2, "A");
+
+                    const dateComponents = data.last_update
+                        .split("T")[0]
+                        .split("-");
+                    const timeComponents = data.last_update
+                        .split("T")[1]
+                        .split(".")[0]
+                        .split(":");
+                    const year = parseInt(dateComponents[0]);
+                    const month = parseInt(dateComponents[1]) - 1;
+                    const day = parseInt(dateComponents[2]);
+                    const hour = parseInt(timeComponents[0]);
+                    const minute = parseInt(timeComponents[1]);
+                    const second = parseInt(timeComponents[2]);
+
+                    document.getElementById(
+                        "modal-last-update"
+                    ).textContent = `${day} ${new Intl.DateTimeFormat("en-US", {
+                        month: "short",
+                    }).format(new Date(year, month))} ${year}, ${hour
+                        .toString()
+                        .padStart(2, "0")}:${minute
+                        .toString()
+                        .padStart(2, "0")}:${second
+                        .toString()
+                        .padStart(2, "0")}`;
+
+                    if (this.chargingChart) {
+                        const dataPoints = [];
+
+                        if (
+                            data.battery_soc != null &&
+                            !isNaN(data.battery_soc)
+                        ) {
+                            dataPoints.push({
+                                seriesIndex: 0,
+                                data: [
+                                    {
+                                        x: new Date(data.last_update),
+                                        y: Number(data.battery_soc),
+                                    },
+                                ],
+                            });
+                        }
+
+                        if (
+                            data.solar_voltage != null &&
+                            !isNaN(data.solar_voltage)
+                        ) {
+                            dataPoints.push({
+                                seriesIndex: 1,
+                                data: [
+                                    {
+                                        x: new Date(data.last_update),
+                                        y: Number(data.solar_voltage),
+                                    },
+                                ],
+                            });
+                        }
+
+                        if (
+                            data.battery_voltage != null &&
+                            !isNaN(data.battery_voltage)
+                        ) {
+                            dataPoints.push({
+                                seriesIndex: 2,
+                                data: [
+                                    {
+                                        x: new Date(data.last_update),
+                                        y: Number(data.battery_voltage),
+                                    },
+                                ],
+                            });
+                        }
+
+                        // Only append data if we have valid points
+                        if (dataPoints.length > 0) {
+                            this.chargingChart.appendData(dataPoints);
+
+                            // Clean up series data - keep only valid, recent points
+                            this.cleanupChartSeries();
+                        }
                     }
                 }
             } catch (error) {
                 console.error("Error updating chart:", error);
             }
         }, CHART_POLLING_INTERVAL);
+    }
+
+    // Add a new method to handle chart series cleanup
+    cleanupChartSeries() {
+        try {
+            const currentSeries = this.chargingChart.w.globals.series;
+            const currentXaxis = this.chargingChart.w.globals.seriesX;
+
+            if (
+                !currentSeries ||
+                !currentSeries.length ||
+                !currentXaxis ||
+                !currentXaxis.length
+            ) {
+                return;
+            }
+
+            // For each series, keep only the last 50 valid points
+            const updatedSeries = currentSeries.map((series, index) => {
+                // Safety check for missing x-axis values
+                if (!currentXaxis[index]) return { data: [] };
+
+                // Create valid points array from existing data
+                const validPoints = [];
+                for (let i = 0; i < series.length; i++) {
+                    if (
+                        currentXaxis[index][i] &&
+                        series[i] !== null &&
+                        !isNaN(series[i])
+                    ) {
+                        validPoints.push({
+                            x: currentXaxis[index][i],
+                            y: series[i],
+                        });
+                    }
+                }
+
+                return {
+                    data: validPoints.slice(-50),
+                };
+            });
+
+            this.chargingChart.updateSeries(updatedSeries);
+        } catch (error) {
+            console.error("Error cleaning up chart series:", error);
+        }
     }
 
     clearChartPolling() {
