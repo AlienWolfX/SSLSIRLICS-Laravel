@@ -13,8 +13,6 @@
     <link rel="stylesheet" href="{{ asset ('rsc/css/index.css')}}" />
     <link rel="stylesheet" href="{{ asset ('rsc/css/details.css')}}" />
     <link rel="stylesheet" href="{{ asset ('rsc/css/login_register.css')}}" />
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-
   </head>
   <body>
     {{-- <div class="loading-overlay">
@@ -66,7 +64,7 @@
           <span class = "logo_l">
           <x-application-logo class="rounded-lg shadow-md" />
           </span>
-          
+
           <span class="icon-close mb-5">
               <i class="fa-solid fa-xmark" data-bs-dismiss="modal" aria-label="Close"></i>
                 <!-- To show easy to modify ---   <button type="button" class="btn-close" aria-label="Close"></button> -->
@@ -79,12 +77,12 @@
               <div class="mt-3"></div>
                 <div class="input-box mt-5">
                     <i class="fa-solid fa-envelope"></i>
-                    <input type="email" id="email" name="email" required>
+                    <input type="email" id="emailLogin" name="email" required>
                     <label>Email</label>
                 </div>
                 <div class="input-box">
                     <i class="fa-solid fa-lock"></i>
-                    <input type="password" id="password" name="password" required>
+                    <input type="password" id="passwordLogin" name="password" required>
                     <label>Password</label>
                 </div>
                 <div class="remember-forgot">
@@ -127,12 +125,12 @@
             </div>
             <div class="input-box">
                 <i class="fa-solid fa-envelope"></i>
-                <input type="email" id="email" name="email" required>
+                <input type="email" id="emailRegister" name="email" required>
                 <label>Email</label>
             </div>
             <div class="input-box">
                 <i class="fa-solid fa-user-lock"></i>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="passwordRegister" name="password" required>
                 <label>Password</label>
             </div>
             <div class="input-box">
@@ -177,9 +175,18 @@
               <!-- Left Side - Metric Cards -->
               <div class="col-lg-4">
                 <div class="sticky-top" style="top: 20px">
-                  <div class="fw-bold fs-4 mb-3 text-center">
-                    <span id="modal-barangay-text">-</span>
-                  </div>
+                    <div class="location-section fw-bold fs-4 mb-4 text-center d-flex flex-column">
+                        <div class="location-container">
+                            <span id="modal-location" class="location-text">-</span>
+                            <a href="#" id="modal-directions-btn" class="location-directions ms-2" title="Get directions" style="display:none">
+                                <i class="fas fa-directions"></i>
+                            </a>
+                        </div>
+                        <small id="modal-landmark" class="mb-2 landmark-text">-</small>
+                        <div class="socid-container">
+                            <small class="text-muted fs-6 socid-badge" id="modal-socid">-</small>
+                        </div>
+                    </div>
                   <!-- Solar Panel Card -->
                   <div class="card shadow-sm mb-4 hover-lift">
                     <div class="card-header bg-gradient">
