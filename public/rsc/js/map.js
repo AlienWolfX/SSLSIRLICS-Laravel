@@ -762,7 +762,7 @@ class StreetlightMap {
 
             if (!response?.data?.devices?.length) return;
 
-            console.log("Streetlight data:", response);
+            console.log("Streetlight data:", response.data);
 
             const markers = response.data.devices.map((device) => {
                 const coordinates = [
