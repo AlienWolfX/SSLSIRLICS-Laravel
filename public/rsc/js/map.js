@@ -18,6 +18,8 @@ class StreetlightMap {
         this.detailZoomLevel = 14;
         this.lastClickedBarangay = null;
         this.streetlightMarkers = new Map();
+        this.BATTERY_WARNING_THRESHOLD = 60;
+        this.lastWarningTime = {};
         this.initialize();
     }
 
@@ -181,18 +183,14 @@ class StreetlightMap {
                         provinceCode,
                         data.municipality_code
                     );
-                    this.map.flyTo(
-                        coordinates,
-                        this.barangayZoomThreshold,
-                        {
-                            animate: true,
-                            duration: 1,
-                            complete: () => {
-                                console.log("Fly animation complete");
-                                this.toggleMarkersVisibility();
-                            },
-                        }
-                    );
+                    this.map.flyTo(coordinates, this.barangayZoomThreshold, {
+                        animate: true,
+                        duration: 1,
+                        complete: () => {
+                            console.log("Fly animation complete");
+                            this.toggleMarkersVisibility();
+                        },
+                    });
                 });
 
                 const markerKey = `${provinceCode}_${data.municipality_code}`;
@@ -766,38 +764,39 @@ class StreetlightMap {
 
             if (!response?.data?.devices?.length) return;
 
-            const markers = response.data.devices.map((device) => {
-                const coordinates = [
-                    device.coordinates.lat,
-                    device.coordinates.long,
-                ];
+            const markers = await Promise.all(
+                response.data.devices.map(async (device) => {
+                    const deviceDetails =
+                        await window.apiService.getStreetlightDetails(
+                            device.soc_id
+                        );
+                    if (deviceDetails?.data) {
+                        const newStatus = await this.checkDeviceReadings(
+                            device.soc_id,
+                            deviceDetails.data
+                        );
+                        device.status = newStatus;
+                    }
 
-                const icon = this.getMarkerIconByStatus(device.status);
-                const marker = L.marker(coordinates, {
-                    icon,
-                    // Remove riseOnHover for smoother performance
-                    riseOnHover: false,
-                });
+                    const coordinates = [
+                        device.coordinates.lat,
+                        device.coordinates.long,
+                    ];
 
-                const statusBadge = `
-                    <span class="badge ${this.getStatusBadgeClass(
-                        device.status
-                    )}">
-                        <i class="fas fa-circle me-1"></i>${device.status}
-                    </span>
-                `;
+                    const icon = this.getMarkerIconByStatus(device.status);
+                    const marker = L.marker(coordinates, {
+                        icon,
+                        riseOnHover: false,
+                    });
 
-                const popupContent = `
+                    const popupContent = `
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2">
                             <small class="text-muted">SOC ID:</small>
                             <strong>${device.soc_id}</strong>
                             <div class="mt-1">
                                 <small class="text-muted">Status:</small>
-                                ${this.getStatusContent(
-                                    device.status,
-                                    device.updated_at
-                                )}
+                                ${this.getStatusContent(device.status)}
                             </div>
                             <div class="mt-2 text-center">
                                 <button onclick="streetlightMap.showDetails('${
@@ -811,21 +810,21 @@ class StreetlightMap {
                     </div>
                 `;
 
-                // Only show popup on click, remove hover behavior
-                marker.bindPopup(popupContent, {
-                    closeButton: true,
-                    closeOnClick: true,
-                    autoClose: true,
-                });
+                    marker.bindPopup(popupContent, {
+                        closeButton: true,
+                        closeOnClick: true,
+                        autoClose: true,
+                    });
 
-                marker.deviceData = {
-                    soc_id: device.soc_id,
-                    status: device.status,
-                };
+                    marker.deviceData = {
+                        soc_id: device.soc_id,
+                        status: device.status,
+                    };
 
-                this.streetlightMarkers.set(device.soc_id, marker);
-                return marker;
-            });
+                    this.streetlightMarkers.set(device.soc_id, marker);
+                    return marker;
+                })
+            );
 
             L.featureGroup(markers).addTo(this.map);
 
@@ -837,6 +836,94 @@ class StreetlightMap {
         }
     }
 
+    async checkDeviceReadings(socId, data) {
+        try {
+            let newStatus = data.status;
+            const warnings = [];
+
+            // Check battery level
+            if (data.battery_soc < this.BATTERY_WARNING_THRESHOLD) {
+                newStatus = "maintenance";
+                warnings.push({
+                    id: "battery",
+                    type: "warning",
+                    message: `Battery level is below ${this.BATTERY_WARNING_THRESHOLD}% (Current: ${data.battery_soc}%)`,
+                });
+            }
+
+            // Check solar voltage
+            if (data.solar_voltage < 10) {
+                newStatus = "maintenance";
+                warnings.push({
+                    id: "solar",
+                    type: "warning",
+                    message: `Low solar voltage detected (${data.solar_voltage}V)`,
+                });
+            }
+
+            // Check if bulb is drawing current
+            if (data.current < 0.1 && data.status !== "inactive") {
+                newStatus = "inactive";
+                warnings.push({
+                    id: "bulb",
+                    type: "warning",
+                    message: `Bulb may not be functioning properly (Current: ${data.current}A)`,
+                });
+            }
+
+            // Update device status if needed
+            if (newStatus !== data.status) {
+                await this.setDeviceStatus(socId, newStatus);
+            }
+
+            // Show warnings in modal if it's open
+            if (
+                document
+                    .getElementById("streetlightModal")
+                    .classList.contains("show")
+            ) {
+                this.updateWarnings(warnings);
+            }
+
+            return newStatus;
+        } catch (error) {
+            console.error("Error checking device readings:", error);
+            return data.status;
+        }
+    }
+
+    // Add this new method to handle warnings display
+    updateWarnings(warnings) {
+        const container = document.getElementById("warningsContainer");
+        if (!container) return;
+
+        // Clear existing warnings
+        container.innerHTML = "";
+
+        if (warnings.length === 0) return;
+
+        // Add new warnings
+        warnings.forEach((warning) => {
+            // Check if warning already exists
+            const existingWarning = container.querySelector(
+                `[data-warning-id="${warning.id}"]`
+            );
+            if (!existingWarning) {
+                const warningDiv = document.createElement("div");
+                warningDiv.className = `alert alert-${warning.type} alert-dismissible fade show mb-2`;
+                warningDiv.setAttribute("data-warning-id", warning.id);
+                warningDiv.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <div>${warning.message}</div>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                container.appendChild(warningDiv);
+            }
+        });
+    }
+
     startStatusPolling() {
         const POLLING_INTERVAL = 5000; // 5 seconds
         this.statusPolling = setInterval(async () => {
@@ -845,25 +932,23 @@ class StreetlightMap {
 
                 for (const socId of socIds) {
                     const response =
-                        await window.apiService.getStreetlightStatus(socId);
-                    if (response?.data?.status) {
+                        await window.apiService.getStreetlightDetails(socId);
+                    if (response?.data) {
+                        // Check all readings and update status if needed
+                        const newStatus = await this.checkDeviceReadings(
+                            socId,
+                            response.data
+                        );
+
                         const marker = this.streetlightMarkers.get(socId);
-                        if (
-                            marker &&
-                            marker.deviceData.status !== response.data.status
-                        ) {
-                            this.updateMarkerStatus(
-                                marker,
-                                response.data.status
-                            );
-                            marker.deviceData.status = response.data.status;
+                        if (marker && marker.deviceData.status !== newStatus) {
+                            this.updateMarkerStatus(marker, newStatus);
+                            marker.deviceData.status = newStatus;
 
                             // Update popup if it's open
                             if (marker.isPopupOpen()) {
-                                const content = this.getStatusContent(
-                                    response.data.status,
-                                    response.data.updated_at
-                                );
+                                const content =
+                                    this.getStatusContent(newStatus);
                                 const popup = marker.getPopup();
                                 const currentContent = popup.getContent();
                                 const newContent = currentContent.replace(
@@ -935,8 +1020,15 @@ class StreetlightMap {
             if (!response?.data) return;
 
             const data = response.data;
+            const marker = this.streetlightMarkers.get(socId);
 
-            // Format the timestamp
+            console.log(data);
+
+            // Use existing status if available to avoid unnecessary checks
+            if (marker?.deviceData?.status) {
+                data.status = marker.deviceData.status;
+            }
+
             const lastUpdate = new Date(data.last_update);
             const formattedDate = lastUpdate.toLocaleString("en-US", {
                 year: "numeric",
@@ -947,15 +1039,15 @@ class StreetlightMap {
                 second: "2-digit",
             });
 
-            // Helper function to safely format numeric values
             const formatValue = (value, decimals = 1, unit = "") => {
                 return value != null && !isNaN(value)
                     ? `${Number(value).toFixed(decimals)}${unit}`
                     : "-";
             };
 
-            // Update modal content with latest readings
-            document.getElementById("modal-barangay-text").textContent =
+            document.getElementById("modal-socid").textContent =
+                data.soc_id || "-";
+            document.getElementById("modal-landmark").textContent =
                 data.location || "-";
             document.getElementById("modal-solv").textContent = formatValue(
                 data.solar_voltage,
@@ -1069,11 +1161,11 @@ class StreetlightMap {
         const chartOptions = {
             series: [
                 {
-                    name: "Battery SOC", // Changed from "Battery Level"
+                    name: "Battery SOC",
                     data:
                         chargingHistory?.map((h) => ({
                             x: new Date(h.timestamp),
-                            y: h.battery_soc, // Changed from battery_level
+                            y: h.battery_soc,
                         })) || [],
                 },
                 {
@@ -1170,7 +1262,7 @@ class StreetlightMap {
                         if (!value || isNaN(value)) return "-";
 
                         switch (seriesIndex) {
-                            case 0: // Battery Level
+                            case 0:
                                 return `${value.toFixed(1)}%`;
                             case 3: // Current
                                 return `${value.toFixed(2)}A`;
@@ -1220,6 +1312,11 @@ class StreetlightMap {
 
                 const data = response.data; // Access data directly
                 if (!data) return;
+
+                // Check battery status on each update
+                if (data.battery_soc) {
+                    await this.checkBatteryStatus(socId, data.battery_soc);
+                }
 
                 // Update status badge with class
                 const statusBadge =
@@ -1330,6 +1427,100 @@ class StreetlightMap {
         if (this.chartPolling) {
             clearInterval(this.chartPolling);
             this.chartPolling = null;
+        }
+    }
+
+    async checkBatteryStatus(socId, batterySoc) {
+        if (batterySoc < this.BATTERY_WARNING_THRESHOLD) {
+            const now = Date.now();
+            if (
+                !this.lastWarningTime[socId] ||
+                now - this.lastWarningTime[socId] > 3600000
+            ) {
+                this.lastWarningTime[socId] = now;
+
+                await this.setDeviceStatus(socId, "maintenance");
+
+                if (
+                    document
+                        .getElementById("streetlightModal")
+                        .classList.contains("show")
+                ) {
+                    const warningDiv = document.createElement("div");
+                    warningDiv.className =
+                        "alert alert-warning alert-dismissible fade show mt-3";
+                    warningDiv.innerHTML = `
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Battery state of charge is below ${this.BATTERY_WARNING_THRESHOLD}% (Current: ${batterySoc}%)
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+
+                    const batterySection = document.querySelector(
+                        ".battery-status-main"
+                    ).parentElement.parentElement;
+                    batterySection.insertAdjacentElement(
+                        "afterend",
+                        warningDiv
+                    );
+                }
+            }
+        }
+    }
+
+    async setDeviceStatus(socId, status) {
+        try {
+            const response = await fetch("/api/v1/devices/status", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content,
+                },
+                body: JSON.stringify({
+                    soc_id: socId,
+                    status: status,
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(
+                    error.message || "Failed to update device status"
+                );
+            }
+
+            // Update marker status
+            const marker = this.streetlightMarkers.get(socId);
+            if (marker) {
+                this.updateMarkerStatus(marker, status);
+                marker.deviceData.status = status;
+
+                // Update popup if open
+                if (marker.isPopupOpen()) {
+                    const popup = marker.getPopup();
+                    const currentContent = popup.getContent();
+                    const newContent = currentContent.replace(
+                        /<span class="badge.*?<\/div>/s,
+                        this.getStatusContent(status)
+                    );
+                    popup.setContent(newContent);
+                }
+            }
+
+            // Update modal status if open
+            const statusBadge = document.getElementById("modal-status-badge");
+            if (statusBadge) {
+                statusBadge.textContent = status;
+                statusBadge.className = `badge ${this.getStatusBadgeClass(
+                    status
+                )}`;
+            }
+
+            return true;
+        } catch (error) {
+            console.error("Error setting device status:", error);
+            return false;
         }
     }
 }

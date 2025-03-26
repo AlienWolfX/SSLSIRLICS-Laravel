@@ -89,7 +89,10 @@ class ApiService {
             }
 
             const latestReading = data.latest_reading;
-            // Modified to match the new historical data format
+            const landmark = data.latest_reading.device.SOCadd;
+
+            console.log(landmark);
+
             const historicalData = data.historical_data.map((entry) => ({
                 timestamp: entry.date,
                 battery_soc: entry.batsoc,
@@ -104,7 +107,8 @@ class ApiService {
             return {
                 success: true,
                 data: {
-                    location: latestReading.SOCid,
+                    soc_id: latestReading.SOCid,
+                    location: landmark,
                     solar_voltage: latestReading.solv,
                     solar_current: latestReading.solc,
                     last_update: latestReading.date,
