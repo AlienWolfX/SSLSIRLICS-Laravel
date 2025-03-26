@@ -260,49 +260,4 @@ class DeviceController extends Controller
             ], 500);
         }
     }
-
-    public function setStatus(Request $request): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'soc_id' => 'required|exists:devices,SOCid',
-                'status' => 'required|in:active,inactive,maintenance'
-            ]);
-
-            $device = Device::where('SOCid', $validated['soc_id'])->first();
-
-            if (!$device) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Device not found'
-                ], 404);
-            }
-
-            $device->status = $validated['status'];
-            $device->save();
-
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'soc_id' => $device->SOCid,
-                    'status' => $device->status,
-                    'updated_at' => $device->updated_at
-                ],
-                'message' => 'Device status updated successfully'
-            ]);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to update device status',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
 }

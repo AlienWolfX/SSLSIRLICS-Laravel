@@ -15,7 +15,6 @@
     <link rel="stylesheet" href="{{ asset ('rsc/css/login_register.css')}}" />
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
-    <meta name="csrf-token" content="{{ csrf_token() }}">
   </head>
   <body>
     {{-- <div class="loading-overlay">
@@ -65,7 +64,7 @@
           <span class = "logo_l">
           <x-application-logo class="rounded-lg shadow-md" />
           </span>
-
+          
           <span class="icon-close mb-5">
               <i class="fa-solid fa-xmark" data-bs-dismiss="modal" aria-label="Close"></i>
                 <!-- To show easy to modify ---   <button type="button" class="btn-close" aria-label="Close"></button> -->
@@ -169,10 +168,9 @@
               <!-- Left Side - Metric Cards -->
               <div class="col-lg-4">
                 <div class="sticky-top" style="top: 20px">
-                    <div class="fw-bold fs-4 mb-4 text-center d-flex flex-column">
-                        <span id="modal-landmark" class="mb-2">-</span>
-                        <small class="text-muted fs-6" id="modal-socid">-</small>
-                      </div>
+                  <div class="fw-bold fs-4 mb-3 text-center">
+                    <span id="modal-barangay-text">-</span>
+                  </div>
                   <!-- Solar Panel Card -->
                   <div class="card shadow-sm mb-4 hover-lift">
                     <div class="card-header bg-gradient">

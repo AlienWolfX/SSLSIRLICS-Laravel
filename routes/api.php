@@ -16,8 +16,6 @@ Route::prefix('v1')->group(function () {
     Route::get('/readings', [DeviceReadingController::class, 'index']);
     Route::get('/readings/{socid}', [DeviceReadingController::class, 'show']);
 
-    Route::post('/devices/status', [DeviceController::class, 'setStatus']);
-
     # Map and Information stuff
     Route::get('/getAllDevice', [DeviceController::class,'getAllDevice']);
     Route::get('/showCoordinates/{province}/{municipality}/{barangay}', [DeviceController::class,'showCoordinates']);
