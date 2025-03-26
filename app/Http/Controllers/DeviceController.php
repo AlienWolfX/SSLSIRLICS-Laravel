@@ -219,18 +219,21 @@ class DeviceController extends Controller
         ]);
     }
 
-    public function showCoordinates(): JsonResponse
+    public function showCoordinates(string $province, string $municipality, string $barangay): JsonResponse
     {
         try {
+            // Create SOC pattern based on route parameters
+            $pattern = $province . '-' . $municipality . '-' . $barangay . '%';
+
             $devices = Device::query()
                 ->select('SOCid', 'lat', 'long', 'status')
-                ->where('SOCid', 'LIKE', 'ADN-1000-0001%')
+                ->where('SOCid', 'LIKE', $pattern)
                 ->get();
 
             if ($devices->isEmpty()) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'No devices found with the specified SOC pattern'
+                    'message' => 'No devices found in ' . strtoupper($province) . '-' . strtoupper($municipality) . '-' . strtoupper($barangay)
                 ], 404);
             }
 
@@ -248,6 +251,9 @@ class DeviceController extends Controller
             return response()->json([
                 'status' => 'success',
                 'data' => [
+                    'province_code' => strtoupper($province),
+                    'municipality_code' => strtoupper($municipality),
+                    'barangay_code' => strtoupper($barangay),
                     'devices' => $formattedDevices,
                 ],
                 'message' => 'Device coordinates retrieved successfully'

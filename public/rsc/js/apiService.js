@@ -89,7 +89,28 @@ class ApiService {
             }
 
             const latestReading = data.latest_reading;
-            // Modified to match the new historical data format
+            const landmark = data.latest_reading.device.SOCadd;
+            const latitude = data.latest_reading.device.lat;
+            const longitude = data.latest_reading.device.long;
+
+            let locationAddress = "";
+            try {
+                if (latitude && longitude) {
+                    const nominatimResponse = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+                    );
+                    if (nominatimResponse.ok) {
+                        const locationData = await nominatimResponse.json();
+                        if (locationData && locationData.display_name) {
+                            locationAddress = locationData.display_name;
+                        }
+                    }
+                }
+            } catch (geoError) {
+                console.error("Error fetching location data:", geoError);
+                locationAddress = "None";
+            }
+
             const historicalData = data.historical_data.map((entry) => ({
                 timestamp: entry.date,
                 battery_soc: entry.batsoc,
@@ -104,7 +125,9 @@ class ApiService {
             return {
                 success: true,
                 data: {
-                    location: latestReading.SOCid,
+                    location: locationAddress,
+                    socid: latestReading.SOCid,
+                    landmark: landmark,
                     solar_voltage: latestReading.solv,
                     solar_current: latestReading.solc,
                     last_update: latestReading.date,
