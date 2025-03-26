@@ -1664,6 +1664,37 @@ class StreetlightMap {
           console.error("Failed to load coordinates:", error);
         }
       }
+
+    createCoordinateDisplay() {
+        // Create coordinate display container
+        const coordContainer = L.control({position: 'bottomleft'});
+
+        coordContainer.onAdd = () => {
+            const div = L.DomUtil.create('div', 'coordinate-display');
+            div.id = 'coordinate-display';
+            div.style.cssText = `
+                background: rgba(255, 255, 255, 0.8);
+                padding: 5px 10px;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+                font-family: monospace;
+                font-size: 12px;
+                z-index: 1000;
+            `;
+            return div;
+        };
+
+        coordContainer.addTo(this.map);
+    }
+
+    updateCoordinateDisplay(latlng) {
+        const display = document.getElementById('coordinate-display');
+        if (display) {
+            const lat = latlng.lat.toFixed(6);
+            const lng = latlng.lng.toFixed(6);
+            display.innerHTML = `Lat: ${lat} | Lng: ${lng}`;
+        }
+    }
 }
 
 // Example usage

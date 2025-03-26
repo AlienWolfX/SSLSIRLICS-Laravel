@@ -30,7 +30,8 @@
       id="navbar"
       style="z-index: 1050; width: 98%; border-radius: 30px">
       <div class="container-fluid">
-        
+
+      
             @if (Route::has('login'))
             <div class="d-flex gap-2 position-absolute top-0 end-0 mt-2  d-flex">
                 @auth

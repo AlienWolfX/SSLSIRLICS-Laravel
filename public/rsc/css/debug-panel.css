@@ -19,3 +19,9 @@
 #debug-panel button:hover {
     background: #888;
 }
+
+.coordinate-display {
+    z-index: 1000;
+    pointer-events: none;
+    text-shadow: 1px 1px 0 #fff;
+}

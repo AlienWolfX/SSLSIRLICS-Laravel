@@ -2151,8 +2151,8 @@
           }
         },
         "coordinates": {
-          "latitude": 8.92,
-          "longitude": 125.46,
+          "latitude": 9.080216,
+          "longitude": 125.494080,
           "source": "nominatim"
         }
       },
@@ -4813,8 +4813,8 @@
           }
         },
         "coordinates": {
-          "latitude": 8.36,
-          "longitude": 125.71,
+          "latitude": 8.393022,
+          "longitude": 125.749512,
           "source": "nominatim"
         }
       },
@@ -5583,8 +5583,8 @@
           }
         },
         "coordinates": {
-          "latitude": 10.157793,
-          "longitude": 125.585183,
+          "latitude": 10.255177,
+          "longitude": 125.588837,
           "source": "nominatim"
         }
       },
@@ -8483,8 +8483,8 @@
           }
         },
         "coordinates": {
-          "latitude": 9.702287,
-          "longitude": 125.546483,
+          "latitude": 9.743887,
+          "longitude": 125.809937,
           "source": "nominatim"
         }
       },
@@ -11155,8 +11155,8 @@
           }
         },
         "coordinates": {
-          "latitude": 8.84,
-          "longitude": 126.15,
+          "latitude": 8.777518,
+          "longitude": 126.213684,
           "source": "nominatim"
         }
       }
