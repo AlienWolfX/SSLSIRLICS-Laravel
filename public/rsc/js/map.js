@@ -823,7 +823,6 @@ class StreetlightMap {
                     provinceData.coordinates.longitude,
                 ];
 
-                // Check cache for count data
                 const cachedCount = this.cache.counts.get(`province_${code}`);
                 if (cachedCount) {
                     const marker = this.createProvinceMarker(
@@ -842,7 +841,6 @@ class StreetlightMap {
                 }
             }
 
-            // Process all count requests in parallel
             if (countPromises.length > 0) {
                 const results = await Promise.allSettled(countPromises);
 
@@ -871,7 +869,7 @@ class StreetlightMap {
 
                     const marker = this.createProvinceMarker(
                         code,
-                        provinceData.name,
+                        response.data.name,
                         coordinates,
                         response.data
                     );
