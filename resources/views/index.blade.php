@@ -8,8 +8,14 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="{{ asset ('rsc/leaflet/leaflet.css')}}" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+
     <script src="{{ asset ('rsc/leaflet/leaflet.js')}}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <link rel="stylesheet" href="{{ asset ('rsc/css/index.css')}}" />
     <link rel="stylesheet" href="{{ asset ('rsc/css/details.css')}}" />
     <link rel="stylesheet" href="{{ asset ('rsc/css/login_register.css')}}" />
@@ -172,9 +178,9 @@
     <div id="map"></div>
 
     <div class="modal fade" id="streetlightModal" tabindex="-1" aria-labelledby="streetlightModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-xl">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
-          <div class="modal-header bg-gradient py-2">
+          <div class="modal-header bg-gradient py-2 sticky-top">
             <h5 class="modal-title" id="streetlightModalLabel">
               <i class="fas fa-lightbulb me-2"></i>Streetlight Details
             </h5>
@@ -184,96 +190,94 @@
             <div class="row g-3">
               <!-- Left Side - Metric Cards -->
               <div class="col-lg-4">
-                <div class="sticky-top" style="top: 20px">
-                    <div class="location-section fw-bold fs-4 mb-4 text-center d-flex flex-column">
-                        <div class="location-container">
-                            <span id="modal-location" class="location-text">-</span>
-                            <a href="#" id="modal-directions-btn" class="location-directions ms-2" title="Get directions" style="display:none">
-                                <i class="fas fa-directions"></i>
-                            </a>
+                <div class="location-section fw-bold fs-4 mb-4 text-center d-flex flex-column">
+                  <div class="location-container">
+                    <span id="modal-location" class="location-text">-</span>
+                    <a href="#" id="modal-directions-btn" class="location-directions ms-2" title="Get directions" style="display:none">
+                      <i class="fas fa-directions"></i>
+                    </a>
+                  </div>
+                  <small id="modal-landmark" class="mb-2 landmark-text">-</small>
+                  <div class="socid-container">
+                    <small class="text-muted fs-6 socid-badge" id="modal-socid">-</small>
+                  </div>
+                </div>
+                <!-- Solar Panel Card -->
+                <div class="card shadow-sm mb-4 hover-lift">
+                  <div class="card-header bg-gradient">
+                    <h5 class="mb-0">
+                      <i class="fas fa-solar-panel me-2 solar-icon"></i>Solar Panel
+                    </h5>
+                  </div>
+                  <div class="card-body text-center">
+                    <div class="row">
+                      <div class="col-6">
+                        <i class="fas fa-bolt metric-icon solar-icon"></i>
+                        <div class="metric-value">
+                          <span id="modal-solv">-</span> V
                         </div>
-                        <small id="modal-landmark" class="mb-2 landmark-text">-</small>
-                        <div class="socid-container">
-                            <small class="text-muted fs-6 socid-badge" id="modal-socid">-</small>
+                        <div class="metric-label">Voltage</div>
+                      </div>
+                      <div class="col-6">
+                        <i class="fas fa-charging-station metric-icon solar-icon"></i>
+                        <div class="metric-value">
+                          <span id="modal-solc">-</span> A
                         </div>
-                    </div>
-                  <!-- Solar Panel Card -->
-                  <div class="card shadow-sm mb-4 hover-lift">
-                    <div class="card-header bg-gradient">
-                      <h5 class="mb-0">
-                        <i class="fas fa-solar-panel me-2 solar-icon"></i>Solar Panel
-                      </h5>
-                    </div>
-                    <div class="card-body text-center">
-                      <div class="row">
-                        <div class="col-6">
-                          <i class="fas fa-bolt metric-icon solar-icon"></i>
-                          <div class="metric-value">
-                            <span id="modal-solv">-</span> V
-                          </div>
-                          <div class="metric-label">Voltage</div>
-                        </div>
-                        <div class="col-6">
-                          <i class="fas fa-charging-station metric-icon solar-icon"></i>
-                          <div class="metric-value">
-                            <span id="modal-solc">-</span> A
-                          </div>
-                          <div class="metric-label">Current</div>
-                        </div>
+                        <div class="metric-label">Current</div>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <!-- Status Card -->
-                  <div class="card shadow-sm mb-4 hover-lift">
-                    <div class="card-header bg-gradient">
-                      <h5 class="mb-0">
-                        <i class="fas fa-info-circle me-2 status-icon"></i>Status
-                      </h5>
-                    </div>
-                    <div class="card-body text-center">
-                      <div class="row">
-                        <div class="col-6">
-                          <i class="fas fa-clock metric-icon status-icon"></i>
-                          <div class="metric-value">
-                            <span id="modal-last-update">-</span>
-                          </div>
-                          <div class="metric-label">Last Updated</div>
+                <!-- Status Card -->
+                <div class="card shadow-sm mb-4 hover-lift">
+                  <div class="card-header bg-gradient">
+                    <h5 class="mb-0">
+                      <i class="fas fa-info-circle me-2 status-icon"></i>Status
+                    </h5>
+                  </div>
+                  <div class="card-body text-center">
+                    <div class="row">
+                      <div class="col-6">
+                        <i class="fas fa-clock metric-icon status-icon"></i>
+                        <div class="metric-value">
+                          <span id="modal-last-update">-</span>
                         </div>
-                        <div class="col-6">
-                          <i class="fas fa-power-off metric-icon status-icon"></i>
-                          <div class="metric-value">
-                            <span id="modal-status-badge" class="badge bg-secondary">-</span>
-                          </div>
-                          <div class="metric-label">Current Status</div>
+                        <div class="metric-label">Last Updated</div>
+                      </div>
+                      <div class="col-6">
+                        <i class="fas fa-power-off metric-icon status-icon"></i>
+                        <div class="metric-value">
+                          <span id="modal-status-badge" class="badge bg-secondary">-</span>
                         </div>
+                        <div class="metric-label">Current Status</div>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <!-- Load Card -->
-                  <div class="card shadow-sm hover-lift">
-                    <div class="card-header bg-gradient">
-                      <h5 class="mb-0">
-                        <i class="fas fa-lightbulb me-2 load-icon"></i>Load
-                      </h5>
-                    </div>
-                    <div class="card-body text-center">
-                      <div class="row">
-                        <div class="col-6">
-                          <i class="fas fa-bolt metric-icon load-icon"></i>
-                          <div class="metric-value">
-                            <span id="modal-bulbv">-</span> V
-                          </div>
-                          <div class="metric-label">Voltage</div>
+                <!-- Load Card -->
+                <div class="card shadow-sm hover-lift">
+                  <div class="card-header bg-gradient">
+                    <h5 class="mb-0">
+                      <i class="fas fa-lightbulb me-2 load-icon"></i>Load
+                    </h5>
+                  </div>
+                  <div class="card-body text-center">
+                    <div class="row">
+                      <div class="col-6">
+                        <i class="fas fa-bolt metric-icon load-icon"></i>
+                        <div class="metric-value">
+                          <span id="modal-bulbv">-</span> V
                         </div>
-                        <div class="col-6">
-                          <i class="fas fa-charging-station metric-icon load-icon"></i>
-                          <div class="metric-value">
-                            <span id="modal-curv">-</span> A
-                          </div>
-                          <div class="metric-label">Current</div>
+                        <div class="metric-label">Voltage</div>
+                      </div>
+                      <div class="col-6">
+                        <i class="fas fa-charging-station metric-icon load-icon"></i>
+                        <div class="metric-value">
+                          <span id="modal-curv">-</span> A
                         </div>
+                        <div class="metric-label">Current</div>
                       </div>
                     </div>
                   </div>
@@ -327,7 +331,7 @@
 
                     <!-- Chart Section -->
                     <div class="chart-section">
-                      <div class="chart-container" style="height: 400px">
+                      <div class="chart-container" style="min-height: 400px; max-height: 500px">
                         <div id="modal-charging-chart"></div>
                       </div>
                     </div>
