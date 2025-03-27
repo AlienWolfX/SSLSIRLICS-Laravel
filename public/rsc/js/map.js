@@ -328,6 +328,7 @@ class StreetlightMap {
                         complete: () => {
                             console.log("Fly animation complete");
                             this.toggleMarkersVisibility();
+                            this.toggleMarkersVisibility();
                         },
                     });
                 });
