@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="{{ asset ('rsc/css/index.css')}}" />
     <link rel="stylesheet" href="{{ asset ('rsc/css/details.css')}}" />
     <link rel="stylesheet" href="{{ asset ('rsc/css/login_register.css')}}" />
+    <link rel="stylesheet" href="{{ asset ('rsc/css/map.css')}}" />
+
   </head>
   <body>
     {{-- <div class="loading-overlay">
@@ -152,12 +154,20 @@
     </div>
 
 
-     <!-- Debug Panel geoJsonHandlers -->
+    <!-- Debug Panel geoJsonHandlers -->
     <!-- <div id="debug-panel" style="position: fixed; bottom: 10px; right: 10px; z-index: 1000; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; display: none;">
     <h4>Debug Info</h4>
     <pre id="debug-content"></pre>
     </div> -->
-     <!-- Debug Panel geoJsonHandlers close-->
+    <!-- Debug Panel geoJsonHandlers close-->
+
+    <!-- Map Latitude and Longitude-->
+    <!-- <div id="coordinates" class="coordinate-display">
+        <i class="fas fa-map-marker-alt"></i>
+        <span id="lat">0.000000</span>, 
+        <span id="lng">0.000000</span>
+    </div> -->
+    <!-- Map Latitude and Longitude close-->
 
     <div id="map"></div>
 

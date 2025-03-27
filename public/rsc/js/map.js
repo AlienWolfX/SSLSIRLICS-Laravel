@@ -13,170 +13,92 @@ class StreetlightMap {
         this.zoomThreshold = 11;
         this.caragaData = null;
         this.barangayMarkers = new Map();
-        this.municipalityZoomThreshold = 9;
+        this.municipalityZoomThreshold = 8;
         this.barangayZoomThreshold = 12;
         this.detailZoomLevel = 14;
         this.lastClickedBarangay = null;
         this.streetlightMarkers = new Map();
-        this.geoJsonHandlers = null;
         this.initialize();
     }
 
     async initialize() {
-        // Initialize base map with decimal zoom support
         this.map = L.map("map", {
-            center: [9.160563, 125.872463],
-            zoom: 8.45,
-            zoomSnap: 0.1,        // Allows decimal zoom levels (0.1 increments)
-            zoomDelta: 0.1,       // Controls zoom level changes
-            wheelPxPerZoomLevel: 120,  // Smoother zoom with mouse wheel
+            center: [9.260563, 125.872463],
+            zoom: 8,
             zoomControl: false,
-            wheelDebounceTime: 40 // Smoother wheel zooming
+            zoomSnap: 0.24, // Allows fractional zoom levels in 0.25 increments
+            zoomDelta: 0.24, // Controls zoom level changes when using zoom controls
+            wheelPxPerZoomLevel: 120 // Smooths out mouse wheel zooming
         }).addLayer(
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: '© OpenStreetMap contributors',
-                minZoom: 1,
-                maxZoom: 19
+                minZoom: 7,
+                maxZoom: 18
             })
         );
 
-        // Verify zoom level is set correctly
-        console.log('Initial zoom level:', this.map.getZoom());
+        // Add mousemove event to update coordinates for latitute and longitude
+        // this.map.on('mousemove', (e) => {
+        //     document.getElementById('lat').textContent = e.latlng.lat.toFixed(6);
+        //     document.getElementById('lng').textContent = e.latlng.lng.toFixed(6);
+        // });
 
-        // Add zoom validation on zoom events
-        this.map.on('zoomend', () => {
-            const currentZoom = this.map.getZoom();
-            console.log('New zoom level:', currentZoom);
-            // Round to 1 decimal place if needed
-            const roundedZoom = Math.round(currentZoom * 10) / 10;
-            if (currentZoom !== roundedZoom) {
-                this.map.setZoom(roundedZoom, { animate: false });
-            }
+        // Set the exact zoom level after initialization
+        this.map.setZoom(8.45, {
+            animate: false
         });
 
-        // Initialize GeoJSON handlers using the global class
+        // Initialize GeoJsonHandlers
         this.geoJsonHandlers = new GeoJsonHandlers(this.map);
-        
-        // Initialize GeoJSON layers
-        await this.initializeGeoJsonLayers();
 
-        // Set up other map event listeners
+        // Load and add GeoJSON layers
+        await this.loadAndAddGeoJsonLayers();
+
         this.map.on("zoomend", () => {
             this.toggleMarkersVisibility();
         });
 
-        // Load data and start polling
         await this.loadCaragaData();
         await this.addProvinceMarkers();
         this.startPolling(1000);
     }
 
-    // Add new method for GeoJSON initialization
-    async initializeGeoJsonLayers() {
-        const geoJsonFiles = {
-            ADS: "agusandelsur.geojson",
-            ADN: "agusandelnorte.geojson",
-            DIN: "dinagatisland.geojson",
-            SDN: "surigaodelnorte.geojson",
-            SDS: "surigaodelsur.geojson",
-        };
-
-        // Initialize GeoJSON layer group
-        this.geoJsonLayer = L.layerGroup().addTo(this.map);
-        this.geoJsonLayers = {};
-        this.activeGeoJsonLayer = null;
-
-        // Start the initialization coordinates -//
-        this.loadCoordinates();
-
-        // Add custom CSS styles for GeoJSON layers
-        this.addGeoJsonStyles();
-
-        // Load all GeoJSON files
-        await Promise.all(
-            Object.entries(geoJsonFiles).map(([regionCode, fileName]) => 
-                this.loadGeoJsonFile(regionCode, fileName)
-            )
-        );
-    }
-
-    // Add method for GeoJSON styles
-    addGeoJsonStyles() {
-        if (!document.getElementById("geojson-styles")) {
-            const style = document.createElement("style");
-            style.id = "geojson-styles";
-            style.textContent = `
-                .leaflet-interactive {
-                    outline: none !important;
-                }
-                .province-name-tooltip {
-                    background: none;
-                    border: none;
-                    box-shadow: none;
-                    color: #000;
-                    font-weight: bold;
-                    font-size: 16px;
-                    text-shadow:
-                        -1px -1px 0 #fff,
-                        1px -1px 0 #fff,
-                        -1px 1px 0 #fff,
-                        1px 1px 0 #fff;
-                    text-align: center;
-                    pointer-events: none;
-                    transition: opacity 0.3s;
-                }
-            `;
-            document.head.appendChild(style);
-        }
-    }
-
-    // Add method for loading individual GeoJSON files
-    async loadGeoJsonFile(regionCode, fileName) {
+    async loadAndAddGeoJsonLayers() {
         try {
-            const response = await fetch(`/rsc/geojson/${fileName}`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            // Load GeoJSON data for each province
+            const provinces = {
+                ADN: 'agusandelnorte',
+                ADS: 'agusandelsur',
+                SDS: 'surigaodelsur',
+                SDN: 'surigaodelnorte',
+                DIN: 'dinagatisland'
+            };
+
+            for (const [code, name] of Object.entries(provinces)) {
+                const response = await fetch(`/rsc/geojson/${name}.geojson`);
+                const geoJsonData = await response.json();
+
+                L.geoJSON(geoJsonData, {
+                    style: this.geoJsonHandlers.getGeoJsonStyle(),
+                    onEachFeature: (feature, layer) => {
+                        const isMobile = window.innerWidth <= 768;
+                        
+                        layer.on('mouseover', (e) => {
+                            this.geoJsonHandlers.handleGeoJsonMouseOver(e, feature, layer, isMobile);
+                        });
+                        
+                        layer.on('mouseout', (e) => {
+                            this.geoJsonHandlers.handleGeoJsonMouseOut(e, layer, isMobile);
+                        });
+                        
+                        layer.on('click', (e) => {
+                            this.geoJsonHandlers.handleGeoJsonClick(e, feature, layer);
+                        });
+                    }
+                }).addTo(this.map);
             }
-            const data = await response.json();
-            
-            this.geoJsonLayers[regionCode] = L.geoJSON(data, {
-                style: this.getGeoJsonStyle(),
-                onEachFeature: (feature, layer) => this.setupGeoJsonLayer(feature, layer)
-            }).addTo(this.geoJsonLayer);
-
         } catch (error) {
-            console.error(`Error loading GeoJSON for ${regionCode}:`, error);
+            console.error('Error loading GeoJSON layers:', error);
         }
-    }
-
-    // Add method for GeoJSON styling
-    getGeoJsonStyle() {
-        return {
-            color: "transparent",
-            weight: 0,
-            fillOpacity: 0,
-            fillColor: "transparent",
-            className: "geojson-path",
-            smoothFactor: 1.5,
-            interactive: true,
-            bubblingMouseEvents: false
-        };
-    }
-
-    // Add method for setting up GeoJSON layer interactions
-    setupGeoJsonLayer(feature, layer) {
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-            navigator.userAgent
-        );
-
-        layer.isVisible = false;
-        layer.nameTooltip = null;
-
-        layer.on({
-            mouseover: (e) => this.geoJsonHandlers.handleGeoJsonMouseOver(e, feature, layer, isMobile),
-            mouseout: (e) => this.geoJsonHandlers.handleGeoJsonMouseOut(e, layer, isMobile),
-            click: (e) => this.geoJsonHandlers.handleGeoJsonClick(e, feature, layer)
-        });
     }
 
     startPolling(interval) {
@@ -731,7 +653,15 @@ class StreetlightMap {
                     // Diri raning duha kay if ibutang sa flyto dili mu display
                     this.loadMunicipalityMarkers(code);
                     this.toggleMarkersVisibility();
-                    this.findTargetProvince(provinceData);
+                    
+                    this.map.flyTo(coordinates, 9.35, {
+                        animate: true,
+                        duration: 1,
+                        complete: () => {
+                            console.log("Fly animation complete");
+                            this.geoJsonHandlers.disableGeoJson(); // Moved inside complete callback
+                        }
+                    });
                 });
 
                 this.markers.set(code, marker);
@@ -1584,236 +1514,5 @@ class StreetlightMap {
         }
     }
 
-    async findTargetProvince(provinceData) {
-        try {
-            const coordinates = [
-                parseFloat(provinceData.coordinates.latitude),
-                parseFloat(provinceData.coordinates.longitude)
-            ];
-
-            console.log('Finding province for coordinates:', coordinates);
-
-            // Find the province with the closest match
-            let bestMatch = null;
-            let shortestDistance = Infinity;
-
-            for (const [code, data] of Object.entries(this.provinceData)) {
-                const isInProvince = await this.isCoordinateInProvince(coordinates[0], coordinates[1], code);
-                
-                if (isInProvince) {
-                    const provinceCenter = await this.getProvinceCenterFromCaraga(code);
-                    if (provinceCenter) {
-                        const distance = this.calculateDistance(
-                            coordinates[0], coordinates[1],
-                            provinceCenter[0], provinceCenter[1]
-                        );
-                        
-                        if (distance < shortestDistance) {
-                            shortestDistance = distance;
-                            bestMatch = {
-                                ...data,
-                                code,
-                                center: provinceCenter
-                            };
-                        }
-                    }
-                }
-            }
-
-            if (bestMatch) {
-                console.log(`Flying to ${bestMatch.name}`, bestMatch.center);
-                this.map.flyTo(bestMatch.center, 10, {
-                    animate: true,
-                    duration: 1,
-                    complete: () => {
-                        console.log(`Zoomed to province: ${bestMatch.name}`);
-                        this.toggleMarkersVisibility();
-                    }
-                });
-            } else {
-                console.log('No matching province found');
-                this.map.flyTo(coordinates, 10, {
-                    animate: true,
-                    duration: 1
-                });
-            }
-
-        } catch (error) {
-            console.error('Error in findTargetProvince:', error);
-        }
-    }
-
-    async isCoordinateInProvince(lat, lng, provinceCode) {
-        try {
-            if (!this.caragaData) {
-                console.error('Caraga data not loaded');
-                return false;
-            }
-
-            // Find the province in caraga.json using province code
-            const province = Object.entries(this.caragaData["13"].province_list)
-                .find(([_, data]) => data.province_code === provinceCode)?.[1];
-
-            if (!province) {
-                console.log(`Province ${provinceCode} not found in caraga.json`);
-                return false;
-            }
-
-            // Get municipality coordinates and calculate center point
-            const municipalities = Object.values(province.municipality_list);
-            const validCoordinates = municipalities
-                .filter(mun => mun.coordinates?.latitude && mun.coordinates?.longitude)
-                .map(mun => ({
-                    lat: parseFloat(mun.coordinates.latitude),
-                    lng: parseFloat(mun.coordinates.longitude)
-                }));
-
-            if (validCoordinates.length === 0) {
-                console.warn(`No valid coordinates found for province ${provinceCode}`);
-                return false;
-            }
-
-            // Calculate province bounds with more precise boundaries
-            const bounds = {
-                north: Math.max(...validCoordinates.map(c => c.lat)) + 0.05,
-                south: Math.min(...validCoordinates.map(c => c.lat)) - 0.05,
-                east: Math.max(...validCoordinates.map(c => c.lng)) + 0.05,
-                west: Math.min(...validCoordinates.map(c => c.lng)) - 0.05
-            };
-
-            // Calculate center point of the province
-            const center = {
-                lat: (bounds.north + bounds.south) / 2,
-                lng: (bounds.east + bounds.west) / 2
-            };
-
-            // Calculate distance from point to center
-            const distance = this.calculateDistance(
-                lat, lng,
-                center.lat, center.lng
-            );
-
-            // Calculate maximum allowed distance based on province size
-            const maxDistance = this.calculateMaxDistance(bounds);
-
-            console.log(`Province ${provinceCode} check:`, {
-                point: [lat, lng],
-                center: [center.lat, center.lng],
-                distance: distance,
-                maxDistance: maxDistance,
-                bounds: bounds
-            });
-
-            // Check if point is within bounds AND within reasonable distance from center
-            const isInBounds = lat <= bounds.north && 
-                              lat >= bounds.south && 
-                              lng <= bounds.east && 
-                              lng >= bounds.west;
-
-            const isWithinDistance = distance <= maxDistance;
-
-            return isInBounds && isWithinDistance;
-
-        } catch (error) {
-            console.error('Error in isCoordinateInProvince:', error);
-            return false;
-        }
-    }
-
-    // Helper method to calculate distance between two points
-    calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371; // Radius of the earth in km
-        const dLat = this.deg2rad(lat2 - lat1);
-        const dLon = this.deg2rad(lon2 - lon1);
-        const a = 
-            Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c; // Distance in km
-    }
-
-    deg2rad(deg) {
-        return deg * (Math.PI/180);
-    }
-
-    // Helper method to calculate maximum allowed distance based on province size
-    calculateMaxDistance(bounds) {
-        const width = this.calculateDistance(
-            bounds.south, bounds.west,
-            bounds.south, bounds.east
-        );
-        const height = this.calculateDistance(
-            bounds.south, bounds.west,
-            bounds.north, bounds.west
-        );
-        // Use the larger dimension as the maximum distance
-        return Math.max(width, height) / 2;
-    }
-
-    // Add method to get province center from caraga.json
-    getProvinceCenterFromCaraga(provinceCode) {
-        try {
-            const province = Object.values(this.caragaData["13"].province_list)
-                .find(p => p.province_code === provinceCode);
-
-            if (province?.coordinates) {
-                return [
-                    parseFloat(province.coordinates.latitude),
-                    parseFloat(province.coordinates.longitude)
-                ];
-            }
-            return null;
-        } catch (error) {
-            console.error('Error getting province center:', error);
-            return null;
-        }
-    }
-
-    async loadCoordinates() {
-        try {
-          const response = await fetch("rsc/coordinates.json");
-          this.coordinates = await response.json();
-    
-          // Initialize map after loading coordinates
-          this.initializeMap();
-        } catch (error) {
-          console.error("Failed to load coordinates:", error);
-        }
-      }
-
-    createCoordinateDisplay() {
-        // Create coordinate display container
-        const coordContainer = L.control({position: 'bottomleft'});
-
-        coordContainer.onAdd = () => {
-            const div = L.DomUtil.create('div', 'coordinate-display');
-            div.id = 'coordinate-display';
-            div.style.cssText = `
-                background: rgba(255, 255, 255, 0.8);
-                padding: 5px 10px;
-                border-radius: 4px;
-                border: 1px solid #ccc;
-                font-family: monospace;
-                font-size: 12px;
-                z-index: 1000;
-            `;
-            return div;
-        };
-
-        coordContainer.addTo(this.map);
-    }
-
-    updateCoordinateDisplay(latlng) {
-        const display = document.getElementById('coordinate-display');
-        if (display) {
-            const lat = latlng.lat.toFixed(6);
-            const lng = latlng.lng.toFixed(6);
-            display.innerHTML = `Lat: ${lat} | Lng: ${lng}`;
-        }
-    }
+   
 }
-
-// Example usage
-this.findTargetProvince(provinceData);
-

@@ -4813,7 +4813,7 @@
           }
         },
         "coordinates": {
-          "latitude": 8.393022,
+          "latitude": 8.593022,
           "longitude": 125.749512,
           "source": "nominatim"
         }
@@ -11155,7 +11155,7 @@
           }
         },
         "coordinates": {
-          "latitude": 8.777518,
+          "latitude": 8.677518,
           "longitude": 126.213684,
           "source": "nominatim"
         }
