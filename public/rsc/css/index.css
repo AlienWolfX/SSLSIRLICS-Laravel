@@ -167,21 +167,3 @@ body {
     color: #0a58ca;
     transform: scale(1.1);
 }
-
-.modal-dialog-scrollable .modal-content {
-    max-height: 90vh;
-}
-
-.modal-dialog-scrollable .modal-body {
-    overflow-y: auto;
-}
-
-@media (max-width: 992px) {
-    .chart-container {
-        min-height: 300px;
-    }
-
-    .battery-status-main {
-        margin-bottom: 15px;
-    }
-}

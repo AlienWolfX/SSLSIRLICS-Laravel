@@ -99,14 +99,6 @@ class DeviceController extends Controller
 
     public function province_count(string $province): JsonResponse
     {
-        $provinceLocations = [
-            'ADN' => ['name' => 'Agusan del Norte'],
-            'ADS' => ['name' => 'Agusan del Sur'],
-            'SDS' => ['name' => 'Surigao del Sur'],
-            'SDN' => ['name' => 'Surigao del Norte'],
-            'DIN' => ['name' => 'Dinagat Islands']
-        ];
-
         $count = Device::query()
             ->where('SOCid', 'LIKE', $province . '-%')
             ->count();
@@ -122,19 +114,17 @@ class DeviceController extends Controller
             ->get()
             ->keyBy('status');
 
+        $hasActive = isset($statusCounts['active']) && $statusCounts['active']->count > 0;
         $hasInactive = isset($statusCounts['inactive']) && $statusCounts['inactive']->count > 0;
         $hasMaintenance = isset($statusCounts['maintenance']) && $statusCounts['maintenance']->count > 0;
-
-        $provinceCode = strtoupper($province);
-        $provinceInfo = $provinceLocations[$provinceCode] ?? null;
 
         return response()->json([
             'status' => 'success',
             'data' => [
-                'province_code' => $provinceCode,
-                'name' => $provinceInfo ? $provinceInfo['name'] : null,
+                'province_code' => strtoupper($province),
                 'total_devices' => $count,
                 'status_summary' => [
+                    // 'has_active' => $hasActive,
                     'has_inactive' => $hasInactive,
                     'has_maintenance' => $hasMaintenance,
                 ]
