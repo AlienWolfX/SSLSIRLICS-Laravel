@@ -181,7 +181,7 @@ class StreetlightMap {
                 this.map.removeLayer(marker)
             );
             this.municipalityMarkers.clear();
-
+            this.toggleMarkersVisibility();
             const provinceKey = Object.keys(
                 this.caragaData["13"].province_list
             ).find(
@@ -270,7 +270,7 @@ class StreetlightMap {
                         duration: 1,
                         complete: () => {
                             console.log("Fly animation complete");
-                            this.toggleMarkersVisibility();
+                            
                         },
                     });
                 });
