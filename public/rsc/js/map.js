@@ -19,41 +19,6 @@ class StreetlightMap {
         this.lastClickedBarangay = null;
         this.streetlightMarkers = new Map();
         this.initialize();
-
-        // Check if MarkerCluster plugin is available
-        if (!L.MarkerClusterGroup) {
-            console.error(
-                "Leaflet.markercluster plugin not loaded! Please include the plugin."
-            );
-            return;
-        }
-
-        // Initialize marker clusters
-        this.markerClusters = {
-            provinces: new L.MarkerClusterGroup({
-                chunkedLoading: true,
-                maxClusterRadius: 40,
-                spiderfyOnMaxZoom: false,
-            }),
-            municipalities: new L.MarkerClusterGroup({
-                chunkedLoading: true,
-                maxClusterRadius: 30,
-            }),
-            barangays: new L.MarkerClusterGroup({
-                chunkedLoading: true,
-                maxClusterRadius: 20,
-            }),
-        };
-
-        // Cache for API responses
-        this.cache = {
-            coordinates: new Map(),
-            counts: new Map(),
-            municipalities: new Map(), // Cache for municipality data
-            barangays: new Map(), // Add barangay cache
-            expiryTime: 5 * 60 * 1000, // 5 minutes
-            markersIndex: new Map(), // Spatial index for markers
-        };
     }
 
     async initialize() {
@@ -112,30 +77,9 @@ class StreetlightMap {
 
     async loadCaragaData() {
         try {
-            // Check cache first
-            const cachedData = localStorage.getItem("caraga_data");
-            if (cachedData) {
-                const parsed = JSON.parse(cachedData);
-                if (Date.now() - parsed.timestamp < 3600000) {
-                    // 1 hour cache
-                    console.log("Using cached Caraga data");
-                    this.caragaData = parsed.data;
-                    return parsed.data;
-                }
-            }
-
             const response = await fetch("/rsc/caraga.json");
             const data = await response.json();
-
-            // Cache the data
-            localStorage.setItem(
-                "caraga_data",
-                JSON.stringify({
-                    timestamp: Date.now(),
-                    data: data,
-                })
-            );
-
+            console.log("Loaded Caraga Data:", data);
             this.caragaData = data;
             return data;
         } catch (error) {
@@ -153,7 +97,11 @@ class StreetlightMap {
                 this.map.removeLayer(marker)
             );
             this.municipalityMarkers.clear();
+<<<<<<< HEAD
 
+=======
+            this.toggleMarkersVisibility();
+>>>>>>> parent of 3c3e2f4 (Merge branch 'main' into main)
             const provinceKey = Object.keys(
                 this.caragaData["13"].province_list
             ).find(
@@ -169,10 +117,7 @@ class StreetlightMap {
 
             const provinceData =
                 this.caragaData["13"].province_list[provinceKey];
-            const markersToAdd = [];
-            const countPromises = [];
 
-            // Prepare all API requests first
             for (const [name, data] of Object.entries(
                 provinceData.municipality_list
             )) {
@@ -190,97 +135,88 @@ class StreetlightMap {
                     data.coordinates.latitude,
                     data.coordinates.longitude,
                 ];
-                const path = `${provinceCode}/${data.municipality_code}`;
 
-                // Check count cache
-                const countCacheKey = `municipality_count_${path}`;
-                const cachedCount = this.cache.counts.get(countCacheKey);
+                const response = await window.apiService.getMunicipalityCount(
+                    `${provinceCode}/${data.municipality_code}`
+                );
 
-                if (cachedCount) {
-                    const marker = this.createMunicipalityMarker(
-                        path,
+                if (!response?.data || response.data.total_devices === 0) {
+                    console.log(`Skipping municipality ${name} - no devices`);
+                    continue;
+                }
+
+                const { has_inactive = false, has_maintenance = false } =
+                    response?.data?.status_summary || {};
+                const count = response?.data?.total_devices || 0;
+
+                const icon = this.getMarkerIcon(has_inactive, has_maintenance);
+                const marker = L.marker(coordinates, { icon }).addTo(this.map);
+
+                const popupContent = this.createPopupContent(name, count);
+                marker.bindPopup(
+                    L.popup({
+                        closeButton: false,
+                        offset: [0, -20],
+                    }).setContent(popupContent)
+                );
+
+                marker.on("mouseover", () => {
+                    marker.openPopup();
+                    marker.setZIndexOffset(1000);
+                    this.updatePopupContent(
+                        marker,
                         name,
-                        coordinates,
-                        cachedCount,
+                        `${provinceCode}/${data.municipality_code}`,
+                        "municipality"
+                    );
+                });
+
+                marker.on("mouseout", () => {
+                    marker.closePopup();
+                    marker.setZIndexOffset(0);
+                });
+
+                marker.on("click", () => {
+                    console.log(
+                        "Municipality clicked:",
                         data.municipality_code
                     );
-                    if (marker) markersToAdd.push(marker);
-                } else {
-                    countPromises.push(
-                        window.apiService
-                            .getMunicipalityCount(path)
-                            .then((response) => ({
-                                path,
-                                name,
-                                coordinates,
-                                response,
-                                municipalityCode: data.municipality_code,
-                            }))
-                    );
-                }
-            }
-
-            // Process all count requests in parallel
-            if (countPromises.length > 0) {
-                const results = await Promise.allSettled(countPromises);
-
-                results.forEach((result) => {
-                    if (result.status !== "fulfilled") return;
-
-                    const {
-                        path,
-                        name,
-                        coordinates,
-                        response,
-                        municipalityCode,
-                    } = result.value;
-                    if (!response?.data || response.data.total_devices === 0)
-                        return;
-
-                    // Cache the count data
-                    this.cache.counts.set(
-                        `municipality_count_${path}`,
-                        response.data
+                    this.loadBarangayMarkers(
+                        provinceCode,
+                        data.municipality_code
                     );
 
-                    const marker = this.createMunicipalityMarker(
-                        path,
-                        name,
-                        coordinates,
-                        response.data,
-                        municipalityCode
-                    );
-
+<<<<<<< HEAD
                     if (marker) markersToAdd.push(marker);
                 });
+=======
+                const markerKey = `${provinceCode}_${data.municipality_code}`;
+                this.municipalityMarkers.set(markerKey, marker);
+
+                console.log(
+                    `Added municipality marker: ${markerKey}`,
+                    coordinates,
+                    `Devices: ${count}`
+                );
+>>>>>>> parent of 3c3e2f4 (Merge branch 'main' into main)
             }
 
-            // Add all markers to cluster at once
-            this.markerClusters.municipalities.addLayers(markersToAdd);
-            this.map.addLayer(this.markerClusters.municipalities);
+            this.markers.forEach((marker) => marker.setOpacity(0));
+            this.municipalityMarkers.forEach((marker) => marker.setOpacity(1));
 
-            // Cache the markers
-            this.cache.municipalities.set(cacheKey, {
-                timestamp: Date.now(),
-                markers: markersToAdd.map((marker) => ({
-                    coordinates: marker.getLatLng(),
-                    options: marker.options,
-                    popupContent: marker.getPopup().getContent(),
-                    municipalityCode: marker.municipalityCode,
-                })),
-            });
-
-            // Update marker index
-            this.updateMarkerIndex(markersToAdd);
-
-            console.log(`Added ${markersToAdd.length} municipality markers`);
+            console.log(
+                "Total municipality markers created:",
+                this.municipalityMarkers.size
+            );
             console.groupEnd();
         } catch (error) {
             console.error("Error in loadMunicipalityMarkers:", error);
+            console.trace(error);
             console.groupEnd();
         }
     }
 
+<<<<<<< HEAD
     createMunicipalityMarker(
         path,
         name,
@@ -421,25 +357,21 @@ class StreetlightMap {
         }
     }
 
+=======
+>>>>>>> parent of 3c3e2f4 (Merge branch 'main' into main)
     async loadBarangayMarkers(provinceCode, municipalityCode) {
         try {
             console.group("Loading Barangay Markers");
+            console.log(
+                "Loading barangays for:",
+                provinceCode,
+                municipalityCode
+            );
 
-            // Check cache first
-            const cacheKey = `barangays_${provinceCode}_${municipalityCode}`;
-            const cachedData = this.cache.barangays.get(cacheKey);
-
-            if (
-                cachedData &&
-                Date.now() - cachedData.timestamp < this.cache.expiryTime
-            ) {
-                console.log("Using cached barangay data");
-                this.restoreBarangayMarkers(cachedData.markers);
-                return;
-            }
-
-            // Clear existing markers
-            this.clearBarangayMarkers();
+            this.barangayMarkers.forEach((marker) =>
+                this.map.removeLayer(marker)
+            );
+            this.barangayMarkers.clear();
 
             const provinceKey = Object.keys(
                 this.caragaData["13"].province_list
@@ -457,6 +389,7 @@ class StreetlightMap {
 
             const provinceData =
                 this.caragaData["13"].province_list[provinceKey];
+
             const municipalityKey = Object.keys(
                 provinceData.municipality_list
             ).find(
@@ -474,6 +407,7 @@ class StreetlightMap {
             const municipality =
                 provinceData.municipality_list[municipalityKey];
 
+            // Use barangays instead of barangay_list
             if (!municipality?.barangays) {
                 console.error(
                     "No barangays found for municipality:",
@@ -483,10 +417,24 @@ class StreetlightMap {
                 return;
             }
 
-            const markersToAdd = [];
-            const countPromises = [];
+            console.log(
+                "Found municipality:",
+                municipalityKey,
+                "with",
+                Object.keys(municipality.barangays).length,
+                "barangays"
+            );
 
-            // Prepare all API requests
+            // Remove existing markers
+            this.markers.forEach((marker) => this.map.removeLayer(marker));
+            this.municipalityMarkers.forEach((marker) =>
+                this.map.removeLayer(marker)
+            );
+            this.barangayMarkers.forEach((marker) =>
+                this.map.removeLayer(marker)
+            );
+
+            // Create markers for each barangay
             for (const [name, data] of Object.entries(municipality.barangays)) {
                 if (
                     !data?.coordinates?.latitude ||
@@ -500,184 +448,85 @@ class StreetlightMap {
                     data.coordinates.latitude,
                     data.coordinates.longitude,
                 ];
-                const path = `${provinceCode}/${municipalityCode}/${data.barangay_code}`;
 
-                // Check count cache
-                const countCacheKey = `barangay_count_${path}`;
-                const cachedCount = this.cache.counts.get(countCacheKey);
+                const response = await window.apiService.getBarangayCount(
+                    `${provinceCode}/${municipalityCode}/${data.barangay_code}`
+                );
 
-                if (cachedCount) {
-                    const marker = this.createBarangayMarker(
-                        path,
-                        name,
-                        coordinates,
-                        cachedCount,
-                        data.barangay_code
-                    );
-                    if (marker) markersToAdd.push(marker);
-                } else {
-                    countPromises.push(
-                        window.apiService
-                            .getBarangayCount(path)
-                            .then((response) => ({
-                                path,
-                                name,
-                                coordinates,
-                                response,
-                                barangayCode: data.barangay_code,
-                            }))
-                    );
+                if (!response?.data || response.data.total_devices === 0) {
+                    console.log(`Skipping barangay ${name} - no devices`);
+                    continue;
                 }
-            }
 
-            // Process all count requests in parallel
-            if (countPromises.length > 0) {
-                const results = await Promise.allSettled(countPromises);
+                const { has_inactive = false, has_maintenance = false } =
+                    response?.data?.status_summary || {};
+                const count = response?.data?.total_devices || 0;
 
-                results.forEach((result) => {
-                    if (result.status !== "fulfilled") return;
+                const icon = this.getMarkerIcon(has_inactive, has_maintenance);
+                const marker = L.marker(coordinates, { icon }).addTo(this.map);
 
-                    const { path, name, coordinates, response, barangayCode } =
-                        result.value;
-                    if (!response?.data || response.data.total_devices === 0)
-                        return;
+                const popupContent = this.createPopupContent(name, count);
+                marker.bindPopup(
+                    L.popup({
+                        closeButton: false,
+                        offset: [0, -20],
+                    }).setContent(popupContent)
+                );
 
-                    // Cache the count data
-                    this.cache.counts.set(
-                        `barangay_count_${path}`,
-                        response.data
-                    );
-
-                    const marker = this.createBarangayMarker(
-                        path,
+                marker.on("mouseover", () => {
+                    marker.openPopup();
+                    marker.setZIndexOffset(1000);
+                    this.updatePopupContent(
+                        marker,
                         name,
-                        coordinates,
-                        response.data,
-                        barangayCode
+                        `${provinceCode}/${municipalityCode}/${data.barangay_code}`,
+                        "barangay"
+                    );
+                });
+
+                marker.on("mouseout", () => {
+                    marker.closePopup();
+                    marker.setZIndexOffset(0);
+                });
+
+                marker.on("click", () => {
+                    this.lastClickedBarangay = marker;
+                    const [province, municipality, barangay] =
+                        markerKey.split("_");
+
+                    this.toggleMarkersVisibility();
+                    this.loadStreetlightMarkers(
+                        province,
+                        municipality,
+                        barangay
                     );
 
-                    if (marker) markersToAdd.push(marker);
+                    this.map.flyTo(coordinates, this.detailZoomLevel, {
+                        animate: true,
+                        duration: 1,
+                        complete: () => {
+                            console.log("Zoomed to barangay detail");
+                        },
+                    });
                 });
+
+                const markerKey = `${provinceCode}_${municipalityCode}_${data.barangay_code}`;
+                this.barangayMarkers.set(markerKey, marker);
             }
 
-            // Add all markers to cluster at once
-            this.markerClusters.barangays.addLayers(markersToAdd);
-            this.map.addLayer(this.markerClusters.barangays);
+            this.municipalityMarkers.forEach((marker) => marker.setOpacity(0));
+            this.barangayMarkers.forEach((marker) => marker.setOpacity(1));
 
-            // Cache the markers
-            this.cache.barangays.set(cacheKey, {
-                timestamp: Date.now(),
-                markers: markersToAdd.map((marker) => ({
-                    coordinates: marker.getLatLng(),
-                    options: marker.options,
-                    popupContent: marker.getPopup().getContent(),
-                    barangayCode: marker.barangayCode,
-                    name: marker._name,
-                    path: marker._path,
-                })),
-            });
-
-            // Update marker index
-            this.updateMarkerIndex(markersToAdd);
-
-            console.log(`Added ${markersToAdd.length} barangay markers`);
+            console.log(
+                "Total barangay markers created:",
+                this.barangayMarkers.size
+            );
             console.groupEnd();
         } catch (error) {
             console.error("Error loading barangay markers:", error);
+            console.trace(error);
             console.groupEnd();
         }
-    }
-
-    createBarangayMarker(path, name, coordinates, countData, barangayCode) {
-        const { has_inactive = false, has_maintenance = false } =
-            countData.status_summary || {};
-        const count = countData.total_devices;
-
-        const icon = this.getMarkerIcon(has_inactive, has_maintenance);
-        const marker = L.marker(coordinates, { icon });
-        marker.barangayCode = barangayCode;
-        marker._name = name;
-        marker._path = path;
-
-        const popupContent = this.createPopupContent(name, count);
-        marker.bindPopup(
-            L.popup({
-                closeButton: false,
-                offset: [0, -20],
-            }).setContent(popupContent)
-        );
-
-        // Store in markers Map for reference
-        const markerKey = path.replace(/\//g, "_");
-        this.barangayMarkers.set(markerKey, marker);
-
-        this.setupBarangayMarkerEvents(marker, name, path, coordinates);
-
-        return marker;
-    }
-
-    clearBarangayMarkers() {
-        this.map.removeLayer(this.markerClusters.barangays);
-        this.markerClusters.barangays.clearLayers();
-        this.barangayMarkers.clear();
-    }
-
-    restoreBarangayMarkers(cachedMarkers) {
-        const markersToAdd = cachedMarkers.map((markerData) => {
-            const marker = L.marker(markerData.coordinates, markerData.options);
-            marker.barangayCode = markerData.barangayCode;
-            marker._name = markerData.name;
-            marker._path = markerData.path;
-
-            marker.bindPopup(
-                L.popup({
-                    closeButton: false,
-                    offset: [0, -20],
-                }).setContent(markerData.popupContent)
-            );
-
-            this.setupBarangayMarkerEvents(
-                marker,
-                markerData.name,
-                markerData.path,
-                markerData.coordinates
-            );
-
-            return marker;
-        });
-
-        this.markerClusters.barangays.addLayers(markersToAdd);
-        this.map.addLayer(this.markerClusters.barangays);
-        this.updateMarkerIndex(markersToAdd);
-    }
-
-    setupBarangayMarkerEvents(marker, name, path, coordinates) {
-        marker.on("mouseover", () => {
-            marker.openPopup();
-            marker.setZIndexOffset(1000);
-            this.updatePopupContent(marker, name, path, "barangay");
-        });
-
-        marker.on("mouseout", () => {
-            marker.closePopup();
-            marker.setZIndexOffset(0);
-        });
-
-        marker.on("click", () => {
-            this.lastClickedBarangay = marker;
-            const [province, municipality, barangay] = path.split("/");
-
-            this.toggleMarkersVisibility();
-            this.loadStreetlightMarkers(province, municipality, barangay);
-
-            this.map.flyTo(coordinates, this.detailZoomLevel, {
-                animate: true,
-                duration: 1,
-                complete: () => {
-                    console.log("Zoomed to barangay detail");
-                },
-            });
-        });
     }
 
     getMarkerIcon(hasInactive, hasMaintenance) {
@@ -823,140 +672,184 @@ class StreetlightMap {
 
     async addProvinceMarkers() {
         try {
-            if (!this.caragaData) return;
-
-            // Clear existing clusters
-            this.markerClusters.provinces.clearLayers();
+            if (!this.caragaData) {
+                console.error("Caraga data not loaded");
+                return;
+            }
 
             const provinceList = this.caragaData["13"].province_list;
-            const markersToAdd = [];
-            const countPromises = [];
 
-            // First pass - create markers without counts
             for (const [provinceName, provinceData] of Object.entries(
                 provinceList
             )) {
                 const code = provinceData.province_code;
-                if (!provinceData?.coordinates) continue;
+
+                if (!provinceData?.coordinates) {
+                    console.warn(`No coordinates for province: ${code}`);
+                    continue;
+                }
 
                 const coordinates = [
                     provinceData.coordinates.latitude,
                     provinceData.coordinates.longitude,
                 ];
 
-                const cachedCount = this.cache.counts.get(`province_${code}`);
-                if (cachedCount) {
-                    const marker = this.createProvinceMarker(
-                        code,
+                const response = await window.apiService.getProvinceCount(code);
+
+                // Skip if no data or count is 0
+                if (!response?.data || response.data.total_devices === 0)
+                    continue;
+
+                const { has_inactive = false, has_maintenance = false } =
+                    response.data.status_summary || {};
+                const count = response.data.total_devices;
+                const icon = this.getMarkerIcon(has_inactive, has_maintenance);
+
+                const marker = L.marker(coordinates, { icon }).addTo(this.map);
+                const popupContent = this.createPopupContent(
+                    provinceName,
+                    count
+                );
+
+                marker.bindPopup(
+                    L.popup({ closeButton: false }).setContent(popupContent)
+                );
+
+                marker.on("mouseover", () => {
+                    marker.openPopup();
+                    this.updatePopupContent(
+                        marker,
                         provinceName,
-                        coordinates,
-                        cachedCount
-                    );
-                    if (marker) markersToAdd.push(marker);
-                } else {
-                    countPromises.push(
-                        window.apiService
-                            .getProvinceCount(code)
-                            .then((response) => ({ code, response }))
-                    );
-                }
-            }
-
-            if (countPromises.length > 0) {
-                const results = await Promise.allSettled(countPromises);
-
-                results.forEach((result) => {
-                    if (result.status !== "fulfilled") return;
-
-                    const { code, response } = result.value;
-                    if (!response?.data || response.data.total_devices === 0)
-                        return;
-
-                    // Cache the count data
-                    this.cache.counts.set(`province_${code}`, response.data);
-
-                    const provinceData =
-                        provinceList[
-                            Object.keys(provinceList).find(
-                                (key) =>
-                                    provinceList[key].province_code === code
-                            )
-                        ];
-
-                    const coordinates = [
-                        provinceData.coordinates.latitude,
-                        provinceData.coordinates.longitude,
-                    ];
-
-                    const marker = this.createProvinceMarker(
                         code,
-                        response.data.name,
-                        coordinates,
-                        response.data
+                        "province"
                     );
-
-                    if (marker) markersToAdd.push(marker);
                 });
+<<<<<<< HEAD
             }
 
             // Add all markers to cluster at once
             this.markerClusters.provinces.addLayers(markersToAdd);
             this.map.addLayer(this.markerClusters.provinces);
+=======
 
-            console.log(`Added ${markersToAdd.length} province markers`);
+                marker.on("mouseout", function () {
+                    this.closePopup();
+                });
+
+                marker.on("click", async () => {
+                    console.log(`Province clicked: ${code} (${provinceName})`);
+                    
+                    try {
+                        const disableGeoJson = new Promise((resolve) => {
+                            if (this.geoJsonHandlers) {
+                                this.geoJsonHandlers.layers.forEach((layer, layerCode) => {
+                                    if (layer && layer.setStyle) {
+                                        // Disable the GeoJSON layer
+                                        layer.setStyle({
+                                            fillOpacity: 0,
+                                            opacity: 0,
+                                            interactive: false,
+                                            className: 'disabled-province'
+                                        });
+                                        
+                                        // Remove event listeners and tooltips
+                                        layer.off('mouseover mouseout click');
+                                        if (layer.getTooltip()) layer.unbindTooltip();
+                                        if (layer.getPopup()) layer.unbindPopup();
+                                        
+                                        // Remove custom label overlays
+                                        if (layer.labelOverlay) {
+                                            this.map.removeLayer(layer.labelOverlay);
+                                            layer.labelOverlay = null;
+                                        }
+                                    }
+                                });
+                                
+                                // Add CSS to hide province names and tooltips
+                                if (!document.getElementById('province-style')) {
+                                    const style = document.createElement('style');
+                                    style.id = 'province-style';
+                                    style.textContent = `
+                                        .disabled-province {
+                                            opacity: 0 !important;
+                                            pointer-events: none !important;
+                                        }
+                                        .leaflet-tooltip.province-name,
+                                        .province-name-tooltip {
+                                            opacity: 0 !important;
+                                            visibility: hidden !important;
+                                            color: transparent !important;
+                                            text-shadow: none !important;
+                                            background: transparent !important;
+                                            border: none !important;
+                                            box-shadow: none !important;
+                                            transition: all 0.3s ease-out !important;
+                                        }
+                                        .leaflet-tooltip.province-name.hidden,
+                                        .province-name-tooltip.hidden {
+                                            display: none !important;
+                                        }
+                                    `;
+                                    document.head.appendChild(style);
+                                }
+                                
+                                // Add hidden class to existing tooltips
+                                document.querySelectorAll('.province-name-tooltip, .leaflet-tooltip.province-name')
+                                    .forEach(el => el.classList.add('hidden'));
+                                
+                                this.geoJsonHandlers.enabled = false;
+                                this.map.invalidateSize();
+                                console.log("All GeoJSON layers and province names disabled");
+                                resolve();
+                            }
+                        });
+
+                        // Create a promise for the fly animation
+                        const flyToLocation = new Promise((resolve) => {
+                            this.map.flyTo(coordinates, 9.35, {
+                                animate: true,
+                                duration: 1,
+                                complete: () => {
+                                    console.log(`Fly animation complete for ${provinceName}`);
+                                    resolve();
+                                }
+                            });
+                        });
+
+                        // Execute all operations simultaneously
+                        await Promise.all([
+                            disableGeoJson,
+                            flyToLocation,
+                            this.loadMunicipalityMarkers(code)
+                        ]);
+
+                        // Update marker visibility after operations complete
+                        this.toggleMarkersVisibility();
+                        
+                    } catch (error) {
+                        console.error(`Error handling province click for ${provinceName}:`, error);
+                    }
+                });
+>>>>>>> parent of 3c3e2f4 (Merge branch 'main' into main)
+
+                this.markers.set(code, marker);
+                console.log(`Added province marker: ${code}`, coordinates);
+            }
         } catch (error) {
             console.error("Error adding province markers:", error);
+            throw error;
         }
-    }
-
-    createProvinceMarker(code, name, coordinates, countData) {
-        const { has_inactive = false, has_maintenance = false } =
-            countData.status_summary || {};
-        const count = countData.total_devices;
-
-        const icon = this.getMarkerIcon(has_inactive, has_maintenance);
-        const marker = L.marker(coordinates, { icon });
-
-        const popupContent = this.createPopupContent(name, count);
-        marker.bindPopup(
-            L.popup({ closeButton: false }).setContent(popupContent)
-        );
-
-        // Set up event handlers
-        marker.on("mouseover", () => {
-            marker.openPopup();
-            this.updatePopupContent(marker, name, code, "province");
-        });
-
-        marker.on("mouseout", function () {
-            this.closePopup();
-        });
-
-        marker.on("click", () => {
-            this.loadMunicipalityMarkers(code);
-            this.map.flyTo(coordinates, 10, {
-                animate: true,
-                duration: 1,
-            });
-        });
-
-        this.markers.set(code, marker);
-        return marker;
     }
 
     async toggleMarkersVisibility() {
         const currentZoom = this.map.getZoom();
         console.log("Current zoom level:", currentZoom);
 
-        // Remove all marker clusters from map first
-        this.map.removeLayer(this.markerClusters.provinces);
-        this.map.removeLayer(this.markerClusters.municipalities);
-        this.map.removeLayer(this.markerClusters.barangays);
-
-        // Clear any individual markers
-        this.streetlightMarkers.forEach((marker) =>
+        this.markers.forEach((marker) => this.map.removeLayer(marker));
+        this.municipalityMarkers.forEach((marker) =>
             this.map.removeLayer(marker)
         );
+        this.barangayMarkers.forEach((marker) => this.map.removeLayer(marker));
 
         if (currentZoom >= this.detailZoomLevel) {
             console.log("Detail view - showing only streetlight markers");
@@ -964,17 +857,37 @@ class StreetlightMap {
             return;
         }
 
-        // Determine which cluster group to show based on zoom level
-        if (currentZoom >= this.barangayZoomThreshold) {
-            console.log("Showing barangay markers");
-            this.map.addLayer(this.markerClusters.barangays);
-        } else if (currentZoom >= this.municipalityZoomThreshold) {
-            console.log("Showing municipality markers");
-            this.map.addLayer(this.markerClusters.municipalities);
-        } else {
-            console.log("Showing province markers");
-            this.map.addLayer(this.markerClusters.provinces);
+        this.streetlightMarkers.forEach((marker) =>
+            this.map.removeLayer(marker)
+        );
+
+        if (currentZoom >= this.detailZoomLevel) {
+            console.log("Detail view - hiding all markers");
+            return;
         }
+
+        let markersToShow = new Map();
+
+        if (currentZoom >= this.barangayZoomThreshold) {
+            markersToShow = this.barangayMarkers;
+        } else if (currentZoom >= this.municipalityZoomThreshold) {
+            markersToShow = this.municipalityMarkers;
+        } else {
+            markersToShow = this.markers;
+        }
+
+        markersToShow.forEach((marker) => {
+            if (marker.options.icon) {
+                marker.addTo(this.map);
+                marker.setZIndexOffset(
+                    currentZoom >= this.barangayZoomThreshold
+                        ? 200
+                        : currentZoom >= this.municipalityZoomThreshold
+                        ? 100
+                        : 0
+                );
+            }
+        });
     }
 
     static markerIcons = {
