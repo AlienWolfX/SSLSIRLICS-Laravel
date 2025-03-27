@@ -28,11 +28,11 @@ class StreetlightMap {
             zoomControl: false,
             zoomSnap: 0.24, // Allows fractional zoom levels in 0.25 increments
             zoomDelta: 0.24, // Controls zoom level changes when using zoom controls
-            wheelPxPerZoomLevel: 120 // Smooths out mouse wheel zooming
+            wheelPxPerZoomLevel: 120, // Smooths out mouse wheel zooming
         }).addLayer(
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
                 minZoom: 7,
-                maxZoom: 18
+                maxZoom: 18,
             })
         );
 
@@ -44,7 +44,7 @@ class StreetlightMap {
 
         // Set the exact zoom level after initialization
         this.map.setZoom(8.45, {
-            animate: false
+            animate: false,
         });
 
         // Initialize GeoJsonHandlers
@@ -66,11 +66,11 @@ class StreetlightMap {
         try {
             // Load GeoJSON data for each province
             const provinces = {
-                ADN: 'agusandelnorte',
-                ADS: 'agusandelsur',
-                SDS: 'surigaodelsur',
-                SDN: 'surigaodelnorte',
-                DIN: 'dinagatisland'
+                ADN: "agusandelnorte",
+                ADS: "agusandelsur",
+                SDS: "surigaodelsur",
+                SDN: "surigaodelnorte",
+                DIN: "dinagatisland",
             };
 
             // Clear existing layers if any
@@ -78,33 +78,47 @@ class StreetlightMap {
 
             for (const [code, name] of Object.entries(provinces)) {
                 try {
-                    const response = await fetch(`/rsc/geojson/${name}.geojson`);
+                    const response = await fetch(
+                        `/rsc/geojson/${name}.geojson`
+                    );
                     const geoJsonData = await response.json();
 
                     const layer = L.geoJSON(geoJsonData, {
                         style: this.geoJsonHandlers.getGeoJsonStyle(),
                         onEachFeature: (feature, layer) => {
                             const isMobile = window.innerWidth <= 768;
-                            
+
                             // Add event listeners
-                            layer.on('mouseover', (e) => {
-                                this.geoJsonHandlers.handleGeoJsonMouseOver(e, feature, layer, isMobile);
+                            layer.on("mouseover", (e) => {
+                                this.geoJsonHandlers.handleGeoJsonMouseOver(
+                                    e,
+                                    feature,
+                                    layer,
+                                    isMobile
+                                );
                             });
-                            
-                            layer.on('mouseout', (e) => {
-                                this.geoJsonHandlers.handleGeoJsonMouseOut(e, layer, isMobile);
+
+                            layer.on("mouseout", (e) => {
+                                this.geoJsonHandlers.handleGeoJsonMouseOut(
+                                    e,
+                                    layer,
+                                    isMobile
+                                );
                             });
-                            
-                            layer.on('click', (e) => {
-                                this.geoJsonHandlers.handleGeoJsonClick(e, feature, layer);
+
+                            layer.on("click", (e) => {
+                                this.geoJsonHandlers.handleGeoJsonClick(
+                                    e,
+                                    feature,
+                                    layer
+                                );
                             });
-                        }
+                        },
                     }).addTo(this.map);
 
                     // Store the layer reference
                     this.geoJsonHandlers.addLayer(code, layer);
                     console.log(`Added GeoJSON layer for ${name} (${code})`);
-
                 } catch (error) {
                     console.error(`Error loading GeoJSON for ${name}:`, error);
                 }
@@ -112,9 +126,8 @@ class StreetlightMap {
 
             // Enable GeoJSON layers by default
             this.geoJsonHandlers.enableGeoJson();
-
         } catch (error) {
-            console.error('Error in loadAndAddGeoJsonLayers:', error);
+            console.error("Error in loadAndAddGeoJsonLayers:", error);
         }
     }
 
@@ -270,7 +283,6 @@ class StreetlightMap {
                         duration: 1,
                         complete: () => {
                             console.log("Fly animation complete");
-                            
                         },
                     });
                 });
@@ -672,37 +684,48 @@ class StreetlightMap {
 
                 marker.on("click", async () => {
                     console.log(`Province clicked: ${code} (${provinceName})`);
-                    
+
                     try {
                         const disableGeoJson = new Promise((resolve) => {
                             if (this.geoJsonHandlers) {
-                                this.geoJsonHandlers.layers.forEach((layer, layerCode) => {
-                                    if (layer && layer.setStyle) {
-                                        // Disable the GeoJSON layer
-                                        layer.setStyle({
-                                            fillOpacity: 0,
-                                            opacity: 0,
-                                            interactive: false,
-                                            className: 'disabled-province'
-                                        });
-                                        
-                                        // Remove event listeners and tooltips
-                                        layer.off('mouseover mouseout click');
-                                        if (layer.getTooltip()) layer.unbindTooltip();
-                                        if (layer.getPopup()) layer.unbindPopup();
-                                        
-                                        // Remove custom label overlays
-                                        if (layer.labelOverlay) {
-                                            this.map.removeLayer(layer.labelOverlay);
-                                            layer.labelOverlay = null;
+                                this.geoJsonHandlers.layers.forEach(
+                                    (layer, layerCode) => {
+                                        if (layer && layer.setStyle) {
+                                            // Disable the GeoJSON layer
+                                            layer.setStyle({
+                                                fillOpacity: 0,
+                                                opacity: 0,
+                                                interactive: false,
+                                                className: "disabled-province",
+                                            });
+
+                                            // Remove event listeners and tooltips
+                                            layer.off(
+                                                "mouseover mouseout click"
+                                            );
+                                            if (layer.getTooltip())
+                                                layer.unbindTooltip();
+                                            if (layer.getPopup())
+                                                layer.unbindPopup();
+
+                                            // Remove custom label overlays
+                                            if (layer.labelOverlay) {
+                                                this.map.removeLayer(
+                                                    layer.labelOverlay
+                                                );
+                                                layer.labelOverlay = null;
+                                            }
                                         }
                                     }
-                                });
-                                
+                                );
+
                                 // Add CSS to hide province names and tooltips
-                                if (!document.getElementById('province-style')) {
-                                    const style = document.createElement('style');
-                                    style.id = 'province-style';
+                                if (
+                                    !document.getElementById("province-style")
+                                ) {
+                                    const style =
+                                        document.createElement("style");
+                                    style.id = "province-style";
                                     style.textContent = `
                                         .disabled-province {
                                             opacity: 0 !important;
@@ -726,14 +749,21 @@ class StreetlightMap {
                                     `;
                                     document.head.appendChild(style);
                                 }
-                                
+
                                 // Add hidden class to existing tooltips
-                                document.querySelectorAll('.province-name-tooltip, .leaflet-tooltip.province-name')
-                                    .forEach(el => el.classList.add('hidden'));
-                                
+                                document
+                                    .querySelectorAll(
+                                        ".province-name-tooltip, .leaflet-tooltip.province-name"
+                                    )
+                                    .forEach((el) =>
+                                        el.classList.add("hidden")
+                                    );
+
                                 this.geoJsonHandlers.enabled = false;
                                 this.map.invalidateSize();
-                                console.log("All GeoJSON layers and province names disabled");
+                                console.log(
+                                    "All GeoJSON layers and province names disabled"
+                                );
                                 resolve();
                             }
                         });
@@ -744,9 +774,11 @@ class StreetlightMap {
                                 animate: true,
                                 duration: 1,
                                 complete: () => {
-                                    console.log(`Fly animation complete for ${provinceName}`);
+                                    console.log(
+                                        `Fly animation complete for ${provinceName}`
+                                    );
                                     resolve();
-                                }
+                                },
                             });
                         });
 
@@ -754,14 +786,16 @@ class StreetlightMap {
                         await Promise.all([
                             disableGeoJson,
                             flyToLocation,
-                            this.loadMunicipalityMarkers(code)
+                            this.loadMunicipalityMarkers(code),
                         ]);
 
                         // Update marker visibility after operations complete
                         this.toggleMarkersVisibility();
-                        
                     } catch (error) {
-                        console.error(`Error handling province click for ${provinceName}:`, error);
+                        console.error(
+                            `Error handling province click for ${provinceName}:`,
+                            error
+                        );
                     }
                 });
 
@@ -954,17 +988,24 @@ class StreetlightMap {
                                 <div class="card-body p-3">
                                     <div class=">
                                         <small class="text-muted">SOC ID:</small>
-                                        <strong class="text-dark">${device.soc_id}</strong>
+                                        <strong class="text-dark">${
+                                            device.soc_id
+                                        }</strong>
                                     </div>
                             <div class="mt-2 d-flex align-items-center">
                                     <span class="text-muted me-2">Status:</span>
                                     <span class="d-flex flex-grow-1">
-                                        ${this.getStatusContent(device.status, device.updated_at)}
+                                        ${this.getStatusContent(
+                                            device.status,
+                                            device.updated_at
+                                        )}
                                     </span>
                                 </div>
 
                                     <div class="mt-1 text-center">
-                                        <button onclick="streetlightMap.showDetails('${device.soc_id}')"
+                                        <button onclick="streetlightMap.showDetails('${
+                                            device.soc_id
+                                        }')"
                                             class="btn btn-primary btn-sm w-100 rounded-pill">
                                             <i class="fas fa-info-circle me-1"></i> More Details
                                         </button>
@@ -973,20 +1014,20 @@ class StreetlightMap {
                             </div>
                         `;
 
-                        // Only show popup on click, remove hover behavior
-                        marker.bindPopup(popupContent, {
-                            closeButton: true, // Hide default close button
-                            closeOnClick: true,
-                            autoClose: true,
-                        });
+                // Only show popup on click, remove hover behavior
+                marker.bindPopup(popupContent, {
+                    closeButton: true, // Hide default close button
+                    closeOnClick: true,
+                    autoClose: true,
+                });
 
-                        marker.deviceData = {
-                            soc_id: device.soc_id,
-                            status: device.status,
-                        };
+                marker.deviceData = {
+                    soc_id: device.soc_id,
+                    status: device.status,
+                };
 
-                        this.streetlightMarkers.set(device.soc_id, marker);
-                        return marker;
+                this.streetlightMarkers.set(device.soc_id, marker);
+                return marker;
             });
 
             L.featureGroup(markers).addTo(this.map);
@@ -1020,7 +1061,6 @@ class StreetlightMap {
                             );
                             marker.deviceData.status = response.data.status;
 
-                            // Update popup if it's open
                             if (marker.isPopupOpen()) {
                                 const content = this.getStatusContent(
                                     response.data.status,
@@ -1059,7 +1099,7 @@ class StreetlightMap {
     getStatusContent(status, date) {
         return `
             <span class="badge ${this.getStatusBadgeClass(status)}">
-                <i class="fas fa-circle me-1"></i>${status}
+                <i class="fas fa-circle me-1">${status}</i>
             </span>
         `;
     }
@@ -1237,8 +1277,35 @@ class StreetlightMap {
 
             // Start chart polling
             this.startChartPolling(socId);
+
+            // Check all readings and display warnings
+            const readings = {
+                battery_voltage: parseFloat(data.battery_voltage),
+                battery_soc: parseFloat(data.battery_soc),
+                battery_current: parseFloat(data.battery_current),
+                solar_voltage: parseFloat(data.solar_voltage),
+                solar_current: parseFloat(data.solar_current),
+                bulb_voltage: parseFloat(data.bulb_voltage),
+                bulb_current: parseFloat(data.bulb_current),
+            };
+
+            const allWarnings = ReadingsChecker.checkAllReadings(readings);
+            const warningsContainer =
+                document.getElementById("battery-warnings");
+
+            if (
+                Object.values(allWarnings).some(
+                    (warnings) => warnings.length > 0
+                )
+            ) {
+                warningsContainer.innerHTML =
+                    ReadingsChecker.createWarningsHTML(allWarnings);
+                warningsContainer.classList.remove("d-none");
+            } else {
+                warningsContainer.classList.add("d-none");
+            }
         } catch (error) {
-            console.error("Error loading streetlight details:", error);
+            console.error("Error showing streetlight details:", error);
         }
     }
 
@@ -1614,6 +1681,4 @@ class StreetlightMap {
             this.chartPolling = null;
         }
     }
-
-   
 }

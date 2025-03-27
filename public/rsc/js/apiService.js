@@ -135,7 +135,7 @@ class ApiService {
                         data.latest_reading.device?.status
                     ),
                     bulb_voltage: latestReading.bulbv,
-                    current: latestReading.bulbc,
+                    bulb_current: latestReading.bulbc,
                     battery_soc: latestReading.batsoc,
                     battery_voltage: latestReading.batv,
                     battery_current: latestReading.batc,
