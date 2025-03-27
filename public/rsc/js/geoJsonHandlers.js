@@ -1,19 +1,73 @@
 class GeoJsonHandlers {
     constructor(map) {
-        if (typeof L === 'undefined') {
-            console.error('Leaflet library is not loaded!');
-            throw new Error('Leaflet must be loaded before GeoJsonHandlers');
-        }
-        if (!map) {
-            console.error('Map instance is required for GeoJsonHandlers');
-            throw new Error('Map instance is required');
-        }
         this.map = map;
-        this.debug = true; // Toggle debugging
-        this.initializeDebugPanel(); // Initialize debug panel
-        this.log('GeoJsonHandlers initialized');
-        this.enabled = true; // Add enabled state flag
-        this.activeLayer = null;
+        this.enabled = true;
+        this.layers = new Map();
+    }
+
+    enableGeoJson() {
+        try {
+            this.enabled = true;
+            console.log('Enabling GeoJSON layers...');
+            
+            this.layers.forEach((layer, code) => {
+                if (layer && layer.setStyle) {
+                    layer.setStyle({
+                        ...this.getGeoJsonStyle(),
+                        interactive: true
+                    });
+                    console.log(`Enabled GeoJSON layer: ${code}`);
+                }
+            });
+            
+            this.map.invalidateSize();
+            console.log('GeoJSON layers enabled successfully');
+        } catch (error) {
+            console.error('Error enabling GeoJSON layers:', error);
+        }
+    }
+
+    disableGeoJson() {
+        try {
+            this.enabled = false;
+            console.log('Disabling GeoJSON layers...');
+            
+            this.layers.forEach((layer, code) => {
+                if (layer && layer.setStyle) {
+                    // Remove tooltips
+                    if (layer.getTooltip()) {
+                        layer.unbindTooltip();
+                    }
+                    
+                    // Reset style and disable interactions
+                    layer.setStyle({
+                        fillOpacity: 0,
+                        opacity: 0,
+                        interactive: false
+                    });
+                    
+                    // Remove event listeners
+                    layer.off('mouseover');
+                    layer.off('mouseout');
+                    layer.off('click');
+                    
+                    // Clear state
+                    layer.isClicked = false;
+                    
+                    console.log(`Disabled GeoJSON layer: ${code}`);
+                }
+            });
+            
+            this.map.invalidateSize();
+            console.log('GeoJSON layers disabled successfully');
+        } catch (error) {
+            console.error('Error disabling GeoJSON layers:', error);
+        }
+    }
+
+    addLayer(code, layer) {
+        this.layers.set(code, layer);
+        console.log(`Stored GeoJSON layer reference: ${code}`);
     }
 
     //- debugging for geojsonfiles -//
@@ -46,10 +100,8 @@ class GeoJsonHandlers {
 
     //- debugging for geojsonfiles close-//
 
-
-
-        //- debugging for geojsonfiles using console-//
-         // Update the existing log method
+    //- debugging for geojsonfiles using console-//
+    // Update the existing log method
     log(message, data = null) {
         // if (this.debug) {
         //     const debugContent = document.getElementById('debug-content');
@@ -64,67 +116,7 @@ class GeoJsonHandlers {
         // }
     }
 
-        //- debugging for geojsonfiles  using console close-//
-
-    enableGeoJson() {
-        try {
-            this.enabled = true;
-            this.log('GeoJSON handlers enabled');
-            
-            // Re-enable all GeoJSON layers
-            this.map.eachLayer(layer => {
-                if (layer.feature) {
-                    layer.setStyle({
-                        ...this.getGeoJsonStyle(),
-                        interactive: true
-                    });
-                }
-            });
-        } catch (error) {
-            console.error('Error in enableGeoJson:', error);
-        }
-    }
-
-    disableGeoJson() {
-        try {
-            this.enabled = false;
-            console.log('Disabling GeoJSON layers...');
-            
-            // Find and process all GeoJSON layers
-            this.map.eachLayer(layer => {
-                // Check if layer is a GeoJSON layer
-                if (layer.feature && layer.setStyle) {
-                    console.log('Found GeoJSON layer:', layer.feature.properties);
-                    
-                    // Remove existing tooltips
-                    if (layer.getTooltip()) {
-                        layer.unbindTooltip();
-                    }
-                    
-                    // Reset the layer style and disable interactions
-                    layer.setStyle({
-                        fillOpacity: 0,
-                        opacity: 0,
-                        interactive: false
-                    });
-                    
-                    // Remove all event listeners
-                    layer.off('mouseover');
-                    layer.off('mouseout');
-                    layer.off('click');
-                    
-                    // Clear any stored state
-                    layer.isClicked = false;
-                }
-            });
-            
-            // Force a map redraw
-            this.map.invalidateSize();
-            console.log('GeoJSON layers disabled successfully');
-        } catch (error) {
-            console.error('Error disabling GeoJSON layers:', error);
-        }
-    }
+    //- debugging for geojsonfiles using console close-//
 
     handleGeoJsonMouseOver(e, feature, layer, isMobile) {
         if (!this.enabled) return;

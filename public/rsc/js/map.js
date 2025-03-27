@@ -73,31 +73,48 @@ class StreetlightMap {
                 DIN: 'dinagatisland'
             };
 
-            for (const [code, name] of Object.entries(provinces)) {
-                const response = await fetch(`/rsc/geojson/${name}.geojson`);
-                const geoJsonData = await response.json();
+            // Clear existing layers if any
+            this.geoJsonHandlers.layers.clear();
 
-                L.geoJSON(geoJsonData, {
-                    style: this.geoJsonHandlers.getGeoJsonStyle(),
-                    onEachFeature: (feature, layer) => {
-                        const isMobile = window.innerWidth <= 768;
-                        
-                        layer.on('mouseover', (e) => {
-                            this.geoJsonHandlers.handleGeoJsonMouseOver(e, feature, layer, isMobile);
-                        });
-                        
-                        layer.on('mouseout', (e) => {
-                            this.geoJsonHandlers.handleGeoJsonMouseOut(e, layer, isMobile);
-                        });
-                        
-                        layer.on('click', (e) => {
-                            this.geoJsonHandlers.handleGeoJsonClick(e, feature, layer);
-                        });
-                    }
-                }).addTo(this.map);
+            for (const [code, name] of Object.entries(provinces)) {
+                try {
+                    const response = await fetch(`/rsc/geojson/${name}.geojson`);
+                    const geoJsonData = await response.json();
+
+                    const layer = L.geoJSON(geoJsonData, {
+                        style: this.geoJsonHandlers.getGeoJsonStyle(),
+                        onEachFeature: (feature, layer) => {
+                            const isMobile = window.innerWidth <= 768;
+                            
+                            // Add event listeners
+                            layer.on('mouseover', (e) => {
+                                this.geoJsonHandlers.handleGeoJsonMouseOver(e, feature, layer, isMobile);
+                            });
+                            
+                            layer.on('mouseout', (e) => {
+                                this.geoJsonHandlers.handleGeoJsonMouseOut(e, layer, isMobile);
+                            });
+                            
+                            layer.on('click', (e) => {
+                                this.geoJsonHandlers.handleGeoJsonClick(e, feature, layer);
+                            });
+                        }
+                    }).addTo(this.map);
+
+                    // Store the layer reference
+                    this.geoJsonHandlers.addLayer(code, layer);
+                    console.log(`Added GeoJSON layer for ${name} (${code})`);
+
+                } catch (error) {
+                    console.error(`Error loading GeoJSON for ${name}:`, error);
+                }
             }
+
+            // Enable GeoJSON layers by default
+            this.geoJsonHandlers.enableGeoJson();
+
         } catch (error) {
-            console.error('Error loading GeoJSON layers:', error);
+            console.error('Error in loadAndAddGeoJsonLayers:', error);
         }
     }
 
@@ -107,13 +124,18 @@ class StreetlightMap {
 
     createPopupContent(name, count) {
         return `
-            <div class="card border-0 shadow-sm" style="min-width: 200px;">
-                <div class="card-header bg-primary text-black">
-                    <h5 class="card-title mb-0"><i class="fas fa-map-marker-alt me-2"></i>${name}</h5>
-                </div>
-                <div class="card-body">
-                    <div class="badge bg-info text-white p-2">
-                        <i class="fas fa-lightbulb me-1"></i>Total Devices: ${count}
+            <div class="d-flex justify-content-center align-items-center" ">
+                <div class="card border-0 shadow-sm text-center" style="min-width: 200px;">
+                    <div class="card-header bg-primary text-black">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-map-marker-alt me-2"></i>${name}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="badge bg-info text-white p-2">
+                              <i class="fas fa-lightbulb fa-fw" style="font-size: 1rem; width: 1.5em;"></i>
+                            Total Devices: ${count}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -648,20 +670,99 @@ class StreetlightMap {
                     this.closePopup();
                 });
 
-                marker.on("click", () => {
-                    console.log("Province clicked:", code);
-                    // Diri raning duha kay if ibutang sa flyto dili mu display
-                    this.loadMunicipalityMarkers(code);
-                    this.toggleMarkersVisibility();
+                marker.on("click", async () => {
+                    console.log(`Province clicked: ${code} (${provinceName})`);
                     
-                    this.map.flyTo(coordinates, 9.35, {
-                        animate: true,
-                        duration: 1,
-                        complete: () => {
-                            console.log("Fly animation complete");
-                            this.geoJsonHandlers.disableGeoJson(); // Moved inside complete callback
-                        }
-                    });
+                    try {
+                        const disableGeoJson = new Promise((resolve) => {
+                            if (this.geoJsonHandlers) {
+                                this.geoJsonHandlers.layers.forEach((layer, layerCode) => {
+                                    if (layer && layer.setStyle) {
+                                        // Disable the GeoJSON layer
+                                        layer.setStyle({
+                                            fillOpacity: 0,
+                                            opacity: 0,
+                                            interactive: false,
+                                            className: 'disabled-province'
+                                        });
+                                        
+                                        // Remove event listeners and tooltips
+                                        layer.off('mouseover mouseout click');
+                                        if (layer.getTooltip()) layer.unbindTooltip();
+                                        if (layer.getPopup()) layer.unbindPopup();
+                                        
+                                        // Remove custom label overlays
+                                        if (layer.labelOverlay) {
+                                            this.map.removeLayer(layer.labelOverlay);
+                                            layer.labelOverlay = null;
+                                        }
+                                    }
+                                });
+                                
+                                // Add CSS to hide province names and tooltips
+                                if (!document.getElementById('province-style')) {
+                                    const style = document.createElement('style');
+                                    style.id = 'province-style';
+                                    style.textContent = `
+                                        .disabled-province {
+                                            opacity: 0 !important;
+                                            pointer-events: none !important;
+                                        }
+                                        .leaflet-tooltip.province-name,
+                                        .province-name-tooltip {
+                                            opacity: 0 !important;
+                                            visibility: hidden !important;
+                                            color: transparent !important;
+                                            text-shadow: none !important;
+                                            background: transparent !important;
+                                            border: none !important;
+                                            box-shadow: none !important;
+                                            transition: all 0.3s ease-out !important;
+                                        }
+                                        .leaflet-tooltip.province-name.hidden,
+                                        .province-name-tooltip.hidden {
+                                            display: none !important;
+                                        }
+                                    `;
+                                    document.head.appendChild(style);
+                                }
+                                
+                                // Add hidden class to existing tooltips
+                                document.querySelectorAll('.province-name-tooltip, .leaflet-tooltip.province-name')
+                                    .forEach(el => el.classList.add('hidden'));
+                                
+                                this.geoJsonHandlers.enabled = false;
+                                this.map.invalidateSize();
+                                console.log("All GeoJSON layers and province names disabled");
+                                resolve();
+                            }
+                        });
+
+                        // Create a promise for the fly animation
+                        const flyToLocation = new Promise((resolve) => {
+                            this.map.flyTo(coordinates, 9.35, {
+                                animate: true,
+                                duration: 1,
+                                complete: () => {
+                                    console.log(`Fly animation complete for ${provinceName}`);
+                                    resolve();
+                                }
+                            });
+                        });
+
+                        // Execute all operations simultaneously
+                        await Promise.all([
+                            disableGeoJson,
+                            flyToLocation,
+                            this.loadMunicipalityMarkers(code)
+                        ]);
+
+                        // Update marker visibility after operations complete
+                        this.toggleMarkersVisibility();
+                        
+                    } catch (error) {
+                        console.error(`Error handling province click for ${provinceName}:`, error);
+                    }
                 });
 
                 this.markers.set(code, marker);
@@ -849,43 +950,43 @@ class StreetlightMap {
                 `;
 
                 const popupContent = `
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body p-2">
-                            <small class="text-muted">SOC ID:</small>
-                            <strong>${device.soc_id}</strong>
-                            <div class="mt-1">
-                                <small class="text-muted">Status:</small>
-                                ${this.getStatusContent(
-                                    device.status,
-                                    device.updated_at
-                                )}
+                            <div class="card border-0 shadow-lg rounded-3 bg-light position-relative" style="min-width: 220px;">
+                                <div class="card-body p-3">
+                                    <div class=">
+                                        <small class="text-muted">SOC ID:</small>
+                                        <strong class="text-dark">${device.soc_id}</strong>
+                                    </div>
+                            <div class="mt-2 d-flex align-items-center">
+                                    <span class="text-muted me-2">Status:</span>
+                                    <span class="d-flex flex-grow-1">
+                                        ${this.getStatusContent(device.status, device.updated_at)}
+                                    </span>
+                                </div>
+
+                                    <div class="mt-1 text-center">
+                                        <button onclick="streetlightMap.showDetails('${device.soc_id}')"
+                                            class="btn btn-primary btn-sm w-100 rounded-pill">
+                                            <i class="fas fa-info-circle me-1"></i> More Details
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mt-2 text-center">
-                                <button onclick="streetlightMap.showDetails('${
-                                    device.soc_id
-                                }')"
-                                        class="btn btn-primary btn-sm w-100">
-                                    <i class="fas fa-info-circle me-1"></i>More Details
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                        `;
 
-                // Only show popup on click, remove hover behavior
-                marker.bindPopup(popupContent, {
-                    closeButton: true,
-                    closeOnClick: true,
-                    autoClose: true,
-                });
+                        // Only show popup on click, remove hover behavior
+                        marker.bindPopup(popupContent, {
+                            closeButton: true, // Hide default close button
+                            closeOnClick: true,
+                            autoClose: true,
+                        });
 
-                marker.deviceData = {
-                    soc_id: device.soc_id,
-                    status: device.status,
-                };
+                        marker.deviceData = {
+                            soc_id: device.soc_id,
+                            status: device.status,
+                        };
 
-                this.streetlightMarkers.set(device.soc_id, marker);
-                return marker;
+                        this.streetlightMarkers.set(device.soc_id, marker);
+                        return marker;
             });
 
             L.featureGroup(markers).addTo(this.map);
