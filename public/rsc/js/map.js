@@ -147,22 +147,12 @@ class StreetlightMap {
     async loadMunicipalityMarkers(provinceCode) {
         try {
             console.group("Loading Municipality Markers");
+            console.log("Province Code:", provinceCode);
 
-            // Check cache first
-            const cacheKey = `municipalities_${provinceCode}`;
-            const cachedData = this.cache.municipalities.get(cacheKey);
-
-            if (
-                cachedData &&
-                Date.now() - cachedData.timestamp < this.cache.expiryTime
-            ) {
-                console.log("Using cached municipality data");
-                this.restoreMunicipalityMarkers(cachedData.markers);
-                return;
-            }
-
-            // Clear existing markers
-            this.clearMunicipalityMarkers();
+            this.municipalityMarkers.forEach((marker) =>
+                this.map.removeLayer(marker)
+            );
+            this.municipalityMarkers.clear();
 
             const provinceKey = Object.keys(
                 this.caragaData["13"].province_list
@@ -387,17 +377,48 @@ class StreetlightMap {
             marker.setZIndexOffset(0);
         });
 
-        marker.on("click", () => {
-            this.loadBarangayMarkers(
-                path.split("/")[0],
-                marker.municipalityCode
+                marker.on("click", () => {
+                    console.log(
+                        "Municipality clicked:",
+                        data.municipality_code
+                    );
+                    this.loadBarangayMarkers(
+                        provinceCode,
+                        data.municipality_code
+                    );
+                    this.map.flyTo(coordinates, this.barangayZoomThreshold, {
+                        animate: true,
+                        duration: 1,
+                        complete: () => {
+                            console.log("Fly animation complete");
+                            this.toggleMarkersVisibility();
+                        },
+                    });
+                });
+
+                const markerKey = `${provinceCode}_${data.municipality_code}`;
+                this.municipalityMarkers.set(markerKey, marker);
+
+                console.log(
+                    `Added municipality marker: ${markerKey}`,
+                    coordinates,
+                    `Devices: ${count}`
+                );
+            }
+
+            this.markers.forEach((marker) => marker.setOpacity(0));
+            this.municipalityMarkers.forEach((marker) => marker.setOpacity(1));
+
+            console.log(
+                "Total municipality markers created:",
+                this.municipalityMarkers.size
             );
-            this.map.flyTo(coordinates, this.barangayZoomThreshold, {
-                animate: true,
-                duration: 1,
-                complete: () => this.toggleMarkersVisibility(),
-            });
-        });
+            console.groupEnd();
+        } catch (error) {
+            console.error("Error in loadMunicipalityMarkers:", error);
+            console.trace(error);
+            console.groupEnd();
+        }
     }
 
     async loadBarangayMarkers(provinceCode, municipalityCode) {
