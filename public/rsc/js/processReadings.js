@@ -24,7 +24,8 @@ class ReadingsChecker {
         if (!voltage || !soc) {
             warnings.push({
                 severity: "danger",
-                message: "Battery sensor failure - No reading available",
+                message:
+                    "Battery sensor failure - No reading available (Broken or Stolen)",
                 icon: "fa-triangle-exclamation",
             });
             return warnings;

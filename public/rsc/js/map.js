@@ -992,7 +992,7 @@ class StreetlightMap {
                                             device.soc_id
                                         }</strong>
                                     </div>
-                            <div class="mt-2 d-flex align-items-center">
+                                <div class="mt-2 d-flex align-items-center">
                                     <span class="text-muted me-2">Status:</span>
                                     <span class="d-flex flex-grow-1">
                                         ${this.getStatusContent(
@@ -1001,8 +1001,8 @@ class StreetlightMap {
                                         )}
                                     </span>
                                 </div>
-
-                                    <div class="mt-1 text-center">
+                                <div class="mt-1 text-center">
+                                    <div>
                                         <button onclick="streetlightMap.showDetails('${
                                             device.soc_id
                                         }')"
@@ -1098,8 +1098,11 @@ class StreetlightMap {
 
     getStatusContent(status, date) {
         return `
-            <span class="badge ${this.getStatusBadgeClass(status)}">
-                <i class="fas fa-circle me-1">${status}</i>
+            <span class="badge ${this.getStatusBadgeClass(
+                status
+            )} d-inline-flex align-items-center" style="min-width: 90px; justify-content: center;">
+                <i class="fas fa-circle me-1"></i>
+                <span>${status}</span>
             </span>
         `;
     }
@@ -1146,7 +1149,7 @@ class StreetlightMap {
                 .split(".")[0]
                 .split(":");
             const year = parseInt(dateComponents[0]);
-            const month = parseInt(dateComponents[1]) - 1; // Month is 0-based in JS Date
+            const month = parseInt(dateComponents[1]) - 1;
             const day = parseInt(dateComponents[2]);
             const hour = parseInt(timeComponents[0]);
             const minute = parseInt(timeComponents[1]);
@@ -1193,8 +1196,7 @@ class StreetlightMap {
             ).className = `badge ${this.getStatusBadgeClass(data.status)}`;
             document.getElementById("modal-bulbv").textContent = formatValue(
                 data.bulb_voltage,
-                1,
-                "V"
+                1
             );
             document.getElementById("modal-curv").textContent = formatValue(
                 data.current,
@@ -1530,7 +1532,7 @@ class StreetlightMap {
                     document.getElementById("modal-solc").textContent =
                         formatValue(data.solar_current, 2, "A");
                     document.getElementById("modal-bulbv").textContent =
-                        formatValue(data.bulb_voltage, 1, "V");
+                        formatValue(data.bulb_voltage, 1);
                     document.getElementById("modal-curv").textContent =
                         formatValue(data.current, 2, "A");
                     document.getElementById("modal-batsoc").textContent =
