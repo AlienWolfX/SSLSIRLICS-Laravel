@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="{{ asset ('rsc/css/index.css')}}" />
     <link rel="stylesheet" href="{{ asset ('rsc/css/details.css')}}" />
     <link rel="stylesheet" href="{{ asset ('rsc/css/login_register.css')}}" />
+    <link rel="stylesheet" href="{{ asset ('rsc/css/map.css')}}" />
+
   </head>
   <body>
     {{-- <div class="loading-overlay">
@@ -28,6 +30,8 @@
       id="navbar"
       style="z-index: 1050; width: 98%; border-radius: 30px">
       <div class="container-fluid">
+
+
             @if (Route::has('login'))
             <div class="d-flex gap-2 position-absolute top-0 end-0 mt-2  d-flex">
                 @auth
@@ -150,6 +154,21 @@
     </div>
 
 
+    <!-- Debug Panel geoJsonHandlers -->
+    <!-- <div id="debug-panel" style="position: fixed; bottom: 10px; right: 10px; z-index: 1000; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; display: none;">
+    <h4>Debug Info</h4>
+    <pre id="debug-content"></pre>
+    </div> -->
+    <!-- Debug Panel geoJsonHandlers close-->
+
+    <!-- Map Latitude and Longitude-->
+    <!-- <div id="coordinates" class="coordinate-display">
+        <i class="fas fa-map-marker-alt"></i>
+        <span id="lat">0.000000</span>,
+        <span id="lng">0.000000</span>
+    </div> -->
+    <!-- Map Latitude and Longitude close-->
+
     <div id="map"></div>
 
     <div class="modal fade" id="streetlightModal" tabindex="-1" aria-labelledby="streetlightModalLabel" aria-hidden="true">
@@ -161,7 +180,7 @@
             </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body p-3">
+          <div class="modal-body p-3" style="max-height: 85vh; overflow-y: auto;">
             <div class="row g-3">
               <!-- Left Side - Metric Cards -->
               <div class="col-lg-4">
@@ -178,6 +197,50 @@
                             <small class="text-muted fs-6 socid-badge" id="modal-socid">-</small>
                         </div>
                     </div>
+                  <!-- After location-section and before Solar Panel Card -->
+                  <div class="card shadow-sm mb-4 hover-lift warning-card">
+                    <div class="card-header bg-gradient">
+                      <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2 warning-icon"></i>System Warnings
+                      </h5>
+                    </div>
+                    <div class="card-body">
+                      <!-- Solar Panel Warnings -->
+                      <div id="solar-warnings" class="d-none mb-3">
+                        <div class="warning-section">
+                          <h6 class="text-muted mb-2">
+                            <i class="fas fa-solar-panel me-2"></i>Solar Panel
+                          </h6>
+                          <!-- Solar warnings will be inserted here -->
+                        </div>
+                      </div>
+
+                      <!-- Battery Warnings -->
+                      <div id="battery-warnings" class="d-none mb-3">
+                        <div class="warning-section">
+                          <h6 class="text-muted mb-2">
+                            <i class="fas fa-battery-three-quarters me-2"></i>Battery
+                          </h6>
+                          <!-- Battery warnings will be inserted here -->
+                        </div>
+                      </div>
+
+                      <!-- Load Warnings -->
+                      <div id="load-warnings" class="d-none mb-3">
+                        <div class="warning-section">
+                          <h6 class="text-muted mb-2">
+                            <i class="fas fa-lightbulb me-2"></i>Load
+                          </h6>
+                          <!-- Load warnings will be inserted here -->
+                        </div>
+                      </div>
+
+                      <!-- No Warnings Message -->
+                      <div id="no-warnings" class="text-center text-muted py-3">
+                        <i class="fas fa-check-circle me-2"></i>No active warnings
+                      </div>
+                    </div>
+                  </div>
                   <!-- Solar Panel Card -->
                   <div class="card shadow-sm mb-4 hover-lift">
                     <div class="card-header bg-gradient">
@@ -270,6 +333,9 @@
                       Battery & Charging History
                     </h5>
                   </div>
+                  <div id="battery-warnings" class="d-none mb-4">
+                    <!-- Warnings will be inserted here -->
+                  </div>
                   <div class="card-body p-4">
                     <!-- Battery Info Section -->
                     <div class="row mb-4">
@@ -323,6 +389,8 @@
 
     <script src="{{ asset ('rsc/js/config.js')}}"></script>
     <script src="{{ asset ('rsc/js/apiService.js')}}"></script>
+    <script src="{{ asset ('rsc/js/geoJsonHandlers.js')}}"></script>
+    <script src="{{ asset ('rsc/js/processReadings.js')}}"></script>
     <script src="{{ asset ('rsc/js/map.js')}}"></script>
     <script src="{{ asset ('rsc/js/login-registration.js')}}"></script>
     <script src="{{ asset ('rsc/bootstrap/apexcharts/apexcharts.js')}}"></script>
