@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             <!-- Success/Error Notifications -->
             <div class="fixed top-4 inset-x-0 flex justify-center z-50" id="notification-container">
                 @if (session('success'))
@@ -36,20 +36,17 @@
                 @endif
             </div>
 
-            <!-- Grid Layout for Tables -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Devices Table -->
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900 dark:text-gray-100">
-                        @include('devices.table')
-                    </div>
+            <!-- Devices Table -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 dark:text-gray-100">
+                    @include('devices.table')
                 </div>
+            </div>
 
-                <!-- Error Codes Table -->
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900 dark:text-gray-100">
-                        @include('error-codes.table')
-                    </div>
+            <!-- Error Codes Table -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 dark:text-gray-100">
+                    @include('error-codes.table')
                 </div>
             </div>
         </div>
