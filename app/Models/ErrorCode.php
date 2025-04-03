@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ErrorCode extends Model
 {
@@ -14,7 +15,8 @@ class ErrorCode extends Model
     protected $fillable = [
         'error_code',
         'problem',
-        'action'
+        'action',
+        'user_id'
     ];
 
     /**
@@ -37,4 +39,14 @@ class ErrorCode extends Model
      * @var bool
      */
     public $incrementing = false;
+
+    /**
+     * Get the user that owns the error code.
+     *
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }

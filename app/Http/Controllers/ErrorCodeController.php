@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ErrorCode;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\View\View;
 
 class ErrorCodeController extends Controller
 {
@@ -21,9 +22,17 @@ class ErrorCodeController extends Controller
     }
 
     /**
+     * Show the form for creating a new error code.
+     */
+    public function create(): View
+    {
+        return view('error-codes.create');
+    }
+
+    /**
      * Store a newly created error code.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'error_code' => 'required|string|unique:error_codes',
@@ -31,8 +40,12 @@ class ErrorCodeController extends Controller
             'action' => 'required|string'
         ]);
 
+        $validated['user_id'] = auth()->id();
+
         $errorCode = ErrorCode::create($validated);
-        return response()->json(['data' => $errorCode], 201);
+
+        return redirect()->route('dashboard')
+                        ->with('success', 'Error code created successfully.');
     }
 
     /**
@@ -45,19 +58,31 @@ class ErrorCodeController extends Controller
     }
 
     /**
-     * Update the specified error code.
+     * Show the form for editing the specified error code.
      */
-    public function update(Request $request, string $code): JsonResponse
+    public function edit(string $code)
+    {
+        $errorCode = ErrorCode::findOrFail($code);
+        return view('error-codes.edit', compact('errorCode'));
+    }
+
+    /**
+     * Update the specified error code in storage.
+     */
+    public function update(Request $request, string $code)
     {
         $errorCode = ErrorCode::findOrFail($code);
 
         $validated = $request->validate([
-            'problem' => 'string',
-            'action' => 'string'
+            'error_code' => 'required|string|unique:error_codes,error_code,' . $code . ',error_code',
+            'problem' => 'required|string',
+            'action' => 'required|string'
         ]);
 
         $errorCode->update($validated);
-        return response()->json(['data' => $errorCode]);
+
+        return redirect()->route('dashboard')
+                        ->with('success', 'Error code updated successfully.');
     }
 
     /**

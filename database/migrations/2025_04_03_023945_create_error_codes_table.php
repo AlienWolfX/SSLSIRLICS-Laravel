@@ -1,3 +1,4 @@
+table.php
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -12,9 +13,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('error_codes', function (Blueprint $table) {
-            $table->string('error_code');
+            $table->string('error_code')->primary();
             $table->string('problem');
             $table->string('action');
+            $table->foreignId('user_id')->constrained()
+                  ->onUpdate('cascade')
+                  ->onDelete('cascade');
             $table->timestamps();
         });
     }
