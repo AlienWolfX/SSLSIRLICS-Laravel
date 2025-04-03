@@ -253,14 +253,14 @@
                         <div class="col-6">
                           <i class="fas fa-bolt metric-icon solar-icon"></i>
                           <div class="metric-value">
-                            <span id="modal-solv">-</span> V
+                            <span id="modal-solv">-</span>
                           </div>
                           <div class="metric-label">Voltage</div>
                         </div>
                         <div class="col-6">
                           <i class="fas fa-charging-station metric-icon solar-icon"></i>
                           <div class="metric-value">
-                            <span id="modal-solc">-</span> A
+                            <span id="modal-solc">-</span>
                           </div>
                           <div class="metric-label">Current</div>
                         </div>
@@ -307,14 +307,14 @@
                         <div class="col-6">
                           <i class="fas fa-bolt metric-icon load-icon"></i>
                           <div class="metric-value">
-                            <span id="modal-bulbv">-</span> V
+                            <span id="modal-bulbv">-</span>
                           </div>
                           <div class="metric-label">Voltage</div>
                         </div>
                         <div class="col-6">
                           <i class="fas fa-charging-station metric-icon load-icon"></i>
                           <div class="metric-value">
-                            <span id="modal-curv">-</span> A
+                            <span id="modal-curv">-</span>
                           </div>
                           <div class="metric-label">Current</div>
                         </div>
