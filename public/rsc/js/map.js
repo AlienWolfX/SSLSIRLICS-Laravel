@@ -1196,10 +1196,11 @@ class StreetlightMap {
             ).className = `badge ${this.getStatusBadgeClass(data.status)}`;
             document.getElementById("modal-bulbv").textContent = formatValue(
                 data.bulb_voltage,
-                1
+                1,
+                "V"
             );
             document.getElementById("modal-curv").textContent = formatValue(
-                data.current,
+                data.bulb_current,
                 2,
                 "A"
             );
@@ -1532,9 +1533,9 @@ class StreetlightMap {
                     document.getElementById("modal-solc").textContent =
                         formatValue(data.solar_current, 2, "A");
                     document.getElementById("modal-bulbv").textContent =
-                        formatValue(data.bulb_voltage, 1);
+                        formatValue(data.bulb_voltage, 1, "V");
                     document.getElementById("modal-curv").textContent =
-                        formatValue(data.current, 2, "A");
+                        formatValue(data.bulb_current, 2, "A");
                     document.getElementById("modal-batsoc").textContent =
                         formatValue(data.battery_soc, 1, "%");
                     document.getElementById("modal-batv").textContent =

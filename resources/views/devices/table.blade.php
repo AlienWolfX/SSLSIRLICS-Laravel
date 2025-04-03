@@ -1,4 +1,4 @@
-<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+<div class="relative overflow-hidden shadow-md sm:rounded-lg">
     <!-- Table Header with Search and Add Button -->
     <div class="p-4 bg-white dark:bg-gray-900 flex justify-between items-center">
         <div class="relative">
@@ -16,58 +16,54 @@
         </a>
     </div>
 
-    <!-- Table -->
-    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-            <tr>
-                <th scope="col" class="px-6 py-3">SOC ID</th>
-                <th scope="col" class="px-6 py-3">Address</th>
-                <th scope="col" class="px-6 py-3">Date Installed</th>
-                <th scope="col" class="px-6 py-3">Status</th>
-                <th scope="col" class="px-6 py-3">Latitude</th>
-                <th scope="col" class="px-6 py-3">Longitude</th>
-                <th scope="col" class="px-6 py-3">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($devices as $device)
-                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-grayishBlue dark:hover:bg-gray-600">
-                    <td class="px-6 py-4 font-medium">{{ $device->SOCid }}</td>
-                    <td class="px-6 py-4">{{ $device->SOCadd }}</td>
-                    <td class="px-6 py-4">{{ $device->date_installed->format('M d, Y') }}</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full
-                            @if($device->status === 'active') bg-green-100 text-green-800
-                            @elseif($device->status === 'inactive') bg-red-100 text-red-800
-                            @else bg-yellow-100 text-yellow-800
-                            @endif">
-                            {{ ucfirst($device->status) }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4">{{ number_format($device->lat, 8) }}</td>
-                    <td class="px-6 py-4">{{ number_format($device->long, 8) }}</td>
-                    <td class="px-6 py-4 space-x-2">
-                        <a href="{{ route('devices.edit', $device) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-600">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <button onclick="deleteDevice('{{ $device->id }}')" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-600">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
+    <div class="overflow-x-auto" style="max-height: 70vh;">
+        <table id="devices-table" class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-6 py-3">SOC ID</th>
+                    <th scope="col" class="px-6 py-3">Address</th>
+                    <th scope="col" class="px-6 py-3">Date Installed</th>
+                    <th scope="col" class="px-6 py-3">Status</th>
+                    <th scope="col" class="px-6 py-3">Latitude</th>
+                    <th scope="col" class="px-6 py-3">Longitude</th>
+                    <th scope="col" class="px-6 py-3">Actions</th>
                 </tr>
-            @empty
-                <tr class="bg-white dark:bg-gray-800">
-                    <td colspan="7" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                        No devices found
-                    </td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
-
-    <!-- Pagination -->
-    <div class="p-4">
-        {{ $devices->links() }}
+            </thead>
+            <tbody>
+                @forelse($devices as $device)
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-grayishBlue dark:hover:bg-gray-600">
+                        <td class="px-6 py-4 font-medium">{{ $device->SOCid }}</td>
+                        <td class="px-6 py-4">{{ $device->SOCadd }}</td>
+                        <td class="px-6 py-4">{{ $device->date_installed->format('M d, Y') }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full
+                                @if($device->status === 'active') bg-green-100 text-green-800
+                                @elseif($device->status === 'inactive') bg-red-100 text-red-800
+                                @else bg-yellow-100 text-yellow-800
+                                @endif">
+                                {{ ucfirst($device->status) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">{{ number_format($device->lat, 8) }}</td>
+                        <td class="px-6 py-4">{{ number_format($device->long, 8) }}</td>
+                        <td class="px-6 py-4 space-x-2">
+                            <a href="{{ route('devices.edit', $device) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-600">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button onclick="deleteDevice('{{ $device->id }}')" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-600">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                @empty
+                    <tr class="bg-white dark:bg-gray-800">
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                            No devices found
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 </div>
 

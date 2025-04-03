@@ -1,0 +1,45 @@
+.hover-tooltip {
+    opacity: 0.5;
+}
+
+.click-tooltip {
+    opacity: 1;
+    color: #000;
+}
+
+.geojson-path {
+    transition: all 0.3s ease;
+}
+
+.province-name-tooltip {
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: #000;
+    font-weight: bold;
+    font-size: 16px;
+    text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff,
+        1px 1px 0 #fff;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.coordinate-display {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 1000;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+    font-family: monospace;
+    border: 1px solid #ccc;
+}
+
+.coordinate-display i {
+    color: #1671cb;
+    margin-right: 5px;
+}

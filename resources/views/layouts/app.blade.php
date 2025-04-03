@@ -36,5 +36,7 @@
                 {{ $slot }}
             </main>
         </div>
+        <script src="{{ asset('rsc/js/devices.js') }}"></script>
+        <script src="{{ asset('rsc/js/error-codes.js') }}"></script>
     </body>
 </html>
