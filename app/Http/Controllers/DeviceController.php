@@ -5,13 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Device;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use App\Models\ErrorCode;
 
 class DeviceController extends Controller
 {
     public function index()
     {
         $devices = Device::latest()->paginate(10);
-        return view('dashboard', compact('devices'));
+        $errorCodes = ErrorCode::all();
+        return view('dashboard', compact('devices', 'errorCodes'));
+
     }
 
     public function getAllDevice(): JsonResponse
