@@ -9,6 +9,16 @@ use Illuminate\View\View;
 
 class ErrorCodeController extends Controller
 {
+    public function getErrorCodes(Request $request)
+    {
+        $codes = explode(',', $request->query('codes'));
+        $prefixedCodes = array_map(fn($code) => 'Error:' . $code, $codes);
+        return ErrorCode::whereIn('error_code', $prefixedCodes)
+                        ->select('error_code', 'problem', 'action')
+                        ->get();
+    }
+
+
     /**
      * Display a listing of error codes.
      */

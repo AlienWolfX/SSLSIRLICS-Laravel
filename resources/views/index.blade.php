@@ -200,45 +200,49 @@
                   <!-- After location-section and before Solar Panel Card -->
                   <div class="card shadow-sm mb-4 hover-lift warning-card">
                     <div class="card-header bg-gradient">
-                      <h5 class="mb-0">
-                        <i class="fas fa-exclamation-triangle me-2 warning-icon"></i>System Warnings
-                      </h5>
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle me-2 warning-icon"></i>System Warnings
+                        </h5>
                     </div>
                     <div class="card-body">
-                      <!-- Solar Panel Warnings -->
-                      <div id="solar-warnings" class="d-none mb-3">
-                        <div class="warning-section">
-                          <h6 class="text-muted mb-2">
-                            <i class="fas fa-solar-panel me-2"></i>Solar Panel
-                          </h6>
-                          <!-- Solar warnings will be inserted here -->
+                        <!-- Error Codes Section -->
+                        <div id="error-codes-warnings" class="mb-3">
+                            <div class="warning-section">
+                                <div id="error-codes-content">
+                                    <!-- Error codes will be populated here -->
+                                </div>
+                            </div>
                         </div>
-                      </div>
 
-                      <!-- Battery Warnings -->
-                      <div id="battery-warnings" class="d-none mb-3">
-                        <div class="warning-section">
-                          <h6 class="text-muted mb-2">
-                            <i class="fas fa-battery-three-quarters me-2"></i>Battery
-                          </h6>
-                          <!-- Battery warnings will be inserted here -->
+                        <!-- Component Warnings -->
+                        <div id="component-warnings">
+                            <!-- Solar Panel Warnings -->
+                            <div id="solar-warnings" class="d-none mb-3">
+                                <div class="warning-section">
+                                    <h6 class="text-muted mb-2">
+                                        <i class="fas fa-solar-panel me-2"></i>Solar Panel
+                                    </h6>
+                                </div>
+                            </div>
+
+                            <!-- Battery Warnings -->
+                            <div id="battery-warnings" class="d-none mb-3">
+                                <div class="warning-section">
+                                    <h6 class="text-muted mb-2">
+                                        <i class="fas fa-battery-three-quarters me-2"></i>Battery
+                                    </h6>
+                                </div>
+                            </div>
+
+                            <!-- Load Warnings -->
+                            <div id="load-warnings" class="d-none mb-3">
+                                <div class="warning-section">
+                                    <h6 class="text-muted mb-2">
+                                        <i class="fas fa-lightbulb me-2"></i>Load
+                                    </h6>
+                                </div>
+                            </div>
                         </div>
-                      </div>
-
-                      <!-- Load Warnings -->
-                      <div id="load-warnings" class="d-none mb-3">
-                        <div class="warning-section">
-                          <h6 class="text-muted mb-2">
-                            <i class="fas fa-lightbulb me-2"></i>Load
-                          </h6>
-                          <!-- Load warnings will be inserted here -->
-                        </div>
-                      </div>
-
-                      <!-- No Warnings Message -->
-                      <div id="no-warnings" class="text-center text-muted py-3">
-                        <i class="fas fa-check-circle me-2"></i>No active warnings
-                      </div>
                     </div>
                   </div>
                   <!-- Solar Panel Card -->

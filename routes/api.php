@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\DeviceReadingController;
 use App\Http\Controllers\DeviceController;
+use App\Http\Controllers\ErrorCodeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -23,4 +24,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/province_count/{province}', [DeviceController::class, 'province_count']);
     Route::get('/municipality_count/{province}/{municipality}', [DeviceController::class, 'municipality_count']);
     Route::get('/barangay_count/{province}/{municipality}/{barangay}', [DeviceController::class, 'barangay_count']);
+
+    Route::get('/error-codes', [ErrorCodeController::class, 'getErrorCodes']);
 });
+

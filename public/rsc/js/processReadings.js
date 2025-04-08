@@ -1,146 +1,8 @@
 class ReadingsChecker {
-    static checkAllReadings(readings) {
+    static checkAllReadings(readings, historicalReadings = []) {
         return {
-            battery: this.checkBatteryStatus(
-                readings.battery_voltage,
-                readings.battery_soc,
-                readings.battery_current
-            ),
-            solar: this.checkSolarStatus(
-                readings.solar_voltage,
-                readings.solar_current
-            ),
-            bulb: this.checkBulbStatus(
-                readings.bulb_voltage,
-                readings.bulb_current
-            ),
+            errorCodes: this.getErrorCodes(readings, historicalReadings),
         };
-    }
-
-    static checkBatteryStatus(voltage, soc, current) {
-        const warnings = [];
-
-        // If gikawat :D
-        if (!voltage || !soc) {
-            warnings.push({
-                severity: "danger",
-                message:
-                    "Battery sensor failure - No reading available (Broken or Stolen)",
-                icon: "fa-triangle-exclamation",
-            });
-            return warnings;
-        }
-
-        // Voltage checks
-        if (voltage < 10.5) {
-            warnings.push({
-                severity: "danger",
-                message: "Critical: Battery voltage extremely low (<10.5V)",
-                icon: "fa-triangle-exclamation",
-            });
-        } else if (voltage < 11.5) {
-            warnings.push({
-                severity: "warning",
-                message: "Warning: Battery voltage low (<11.5V)",
-                icon: "fa-exclamation-circle",
-            });
-        } else if (voltage > 14.4) {
-            warnings.push({
-                severity: "warning",
-                message: "Warning: Battery voltage too high (>14.4V)",
-                icon: "fa-bolt",
-            });
-        }
-
-        console.log(voltage, soc, current);
-
-        // SOC checks
-        if (soc < 20) {
-            warnings.push({
-                severity: "danger",
-                message: "Critical: State of Charge critically low (<20%)",
-                icon: "fa-battery-empty",
-            });
-        } else if (soc < 60) {
-            warnings.push({
-                severity: "warning",
-                message: "Warning: State of Charge low (<60%)",
-                icon: "fa-battery-quarter",
-            });
-        }
-
-        return warnings;
-    }
-
-    static checkSolarStatus(voltage, current) {
-        const warnings = [];
-
-        // If gikawat :D
-        if (!voltage || !current) {
-            warnings.push({
-                severity: "danger",
-                message: "Solar panel sensor failure - No reading available",
-                icon: "fa-triangle-exclamation",
-            });
-            return warnings;
-        }
-
-        // Check for no solar output during daytime
-        if (this.isDaytime() && voltage < 5) {
-            warnings.push({
-                severity: "warning",
-                message: "Solar panel not generating power during daytime",
-                icon: "fa-sun",
-            });
-        }
-
-        // Check for unusually high voltage
-        if (voltage > 25) {
-            warnings.push({
-                severity: "warning",
-                message: "Solar panel voltage too high (>25V)",
-                icon: "fa-bolt",
-            });
-        }
-
-        return warnings;
-    }
-
-    static checkBulbStatus(voltage, current) {
-        const warnings = [];
-
-        // If gikawat :D
-
-        console.log(voltage, current);
-
-        if (!voltage || !current) {
-            warnings.push({
-                severity: "danger",
-                message: "Bulb sensor failure - No reading available",
-                icon: "fa-triangle-exclamation",
-            });
-            return warnings;
-        }
-
-        // Check for bulb failure
-        if (voltage > 0 && current === 0) {
-            warnings.push({
-                severity: "danger",
-                message: "Bulb may be damaged - No current flow detected",
-                icon: "fa-lightbulb",
-            });
-        }
-
-        // Check for unusual voltage
-        if (voltage > 12.5) {
-            warnings.push({
-                severity: "warning",
-                message: "Bulb voltage too high (>12.5V)",
-                icon: "fa-bolt",
-            });
-        }
-
-        return warnings;
     }
 
     static isDaytime() {
@@ -148,48 +10,213 @@ class ReadingsChecker {
         return hour >= 6 && hour <= 18;
     }
 
-    static createWarningsHTML(allWarnings) {
-        const sections = [];
+    static getErrorCodes(readings, historicalReadings = []) {
+        const errors = [];
 
-        if (allWarnings.battery.length > 0) {
-            sections.push(
-                this.createWarningSection("Battery Status", allWarnings.battery)
-            );
+        // Error 212: Bulb not working at night
+        if (
+            !this.isDaytime() &&
+            readings.bulb_current === 0 &&
+            readings.bulb_voltage === 0
+        ) {
+            errors.push("212");
         }
 
-        if (allWarnings.solar.length > 0) {
-            sections.push(
-                this.createWarningSection(
-                    "Solar Panel Status",
-                    allWarnings.solar
-                )
-            );
+        // Error 111: Bulb on during daytime
+        if (this.isDaytime() && readings.bulb_current > 0) {
+            errors.push("111");
         }
 
-        if (allWarnings.bulb.length > 0) {
-            sections.push(
-                this.createWarningSection("Bulb Status", allWarnings.bulb)
-            );
+        // Error 311: Solar panel connection issue
+        if (
+            this.isDaytime() &&
+            (readings.solar_voltage === 0 || readings.solar_current === 0)
+        ) {
+            errors.push("311");
         }
 
-        return sections.length > 0 ? sections.join('<hr class="my-2">') : "";
+        // Error 312: Three consecutive days power drop
+        if (this.checkConsecutiveDaysPowerDrop(historicalReadings)) {
+            errors.push("312");
+        }
+
+        // Error 313: Three consecutive days irregular power
+        if (this.checkConsecutiveDaysIrregularPower(historicalReadings)) {
+            errors.push("313");
+        }
+
+        // Error 314: Battery charging too quickly
+        if (this.checkRapidCharging(readings, historicalReadings)) {
+            errors.push("314");
+        }
+
+        // Error 305: SOC value jumps
+        if (historicalReadings.length > 0) {
+            const lastReading =
+                historicalReadings[historicalReadings.length - 1];
+            if (Math.abs(readings.battery_soc - lastReading.battery_soc) > 20) {
+                errors.push("305");
+            }
+        }
+
+        // Error 306: Zero SOC for 3 nights
+        if (
+            !this.isDaytime() &&
+            this.checkConsecutiveZeroSoc(historicalReadings)
+        ) {
+            errors.push("306");
+        }
+
+        // Error 317: Zero SOC for 3 days
+        if (
+            this.isDaytime() &&
+            this.checkConsecutiveZeroSoc(historicalReadings)
+        ) {
+            errors.push("317");
+        }
+
+        // Error 308: 100% SOC for 3 nights
+        if (
+            !this.isDaytime() &&
+            this.checkConsecutiveFullSoc(historicalReadings)
+        ) {
+            errors.push("308");
+        }
+
+        // Error 319: 100% SOC for 3 days
+        if (
+            this.isDaytime() &&
+            this.checkConsecutiveFullSoc(historicalReadings)
+        ) {
+            errors.push("319");
+        }
+
+        // Error 300: Quick discharge at night
+        if (!this.isDaytime() && readings.battery_soc < 20) {
+            errors.push("300");
+        }
+
+        // Error 400: No component data
+        if (
+            !readings.battery_voltage &&
+            !readings.solar_voltage &&
+            !readings.bulb_voltage
+        ) {
+            errors.push("400");
+        }
+
+        return errors;
     }
 
-    static createWarningSection(title, warnings) {
-        return `
-            <div class="warning-section mb-2">
-                <h6 class="text-muted mb-2">${title}</h6>
-                ${warnings
-                    .map(
-                        (warning) => `
-                    <div class="alert alert-${warning.severity} d-flex align-items-center mb-2" role="alert">
-                        <i class="fas ${warning.icon} me-2"></i>
-                        <div>${warning.message}</div>
-                    </div>
-                `
-                    )
-                    .join("")}
-            </div>
-        `;
+    static checkConsecutiveDaysPowerDrop(readings) {
+        if (readings.length < 72) return false; // Need 3 days of data
+        const dayReadings = this.groupByDay(readings);
+        if (dayReadings.length < 3) return false;
+
+        const dailyAverages = dayReadings
+            .slice(-3)
+            .map(
+                (day) =>
+                    day.reduce((sum, r) => sum + r.solar_current, 0) /
+                    day.length
+            );
+
+        return (
+            dailyAverages[2] < dailyAverages[1] &&
+            dailyAverages[1] < dailyAverages[0]
+        );
+    }
+
+    static checkConsecutiveDaysIrregularPower(readings) {
+        if (readings.length < 72) return false;
+        const dayReadings = this.groupByDay(readings);
+        if (dayReadings.length < 3) return false;
+
+        return dayReadings.slice(-3).every((day) => {
+            const values = day.map((r) => r.solar_current);
+            const avg = values.reduce((a, b) => a + b) / values.length;
+            const variance =
+                values.reduce((a, b) => a + Math.pow(b - avg, 2), 0) /
+                values.length;
+            return variance > 2;
+        });
+    }
+
+    static checkRapidCharging(currentReading, historicalReadings) {
+        if (historicalReadings.length < 8) return false; // Need at least 2 hours of data
+        const chargingStartIndex = historicalReadings.findIndex(
+            (r) => r.battery_soc < 90
+        );
+        if (chargingStartIndex === -1) return false;
+
+        const timeToCharge = chargingStartIndex * 15; // 15 minutes between readings
+        return timeToCharge <= 120; // 2 hours or less
+    }
+
+    static checkConsecutiveZeroSoc(readings) {
+        if (readings.length < 72) return false;
+        const dayReadings = this.groupByDay(readings);
+        if (dayReadings.length < 3) return false;
+
+        return dayReadings
+            .slice(-3)
+            .every((day) => day.some((reading) => reading.battery_soc === 0));
+    }
+
+    static checkConsecutiveFullSoc(readings) {
+        if (readings.length < 72) return false;
+        const dayReadings = this.groupByDay(readings);
+        if (dayReadings.length < 3) return false;
+
+        return dayReadings
+            .slice(-3)
+            .every((day) => day.some((reading) => reading.battery_soc === 100));
+    }
+
+    static groupByDay(readings) {
+        const days = [];
+        for (let i = 0; i < readings.length; i += 24) {
+            days.push(readings.slice(i, Math.min(i + 24, readings.length)));
+        }
+        return days;
+    }
+
+    static async createWarningsHTML(allWarnings) {
+        if (!allWarnings.errorCodes || allWarnings.errorCodes.length === 0) {
+            return `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-check-circle me-2"></i>No active warnings
+                </div>
+            `;
+        }
+
+        try {
+            const response = await fetch(
+                `/api/v1/error-codes?codes=${allWarnings.errorCodes.join(",")}`
+            );
+            const errors = await response.json();
+
+            return `
+                <div class="warning-section">
+                    ${errors
+                        .map(
+                            (error) => `
+                        <div class="alert alert-warning d-flex align-items-center mb-2" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <div>
+                                <strong>Error ${error.error_code}:</strong> ${error.problem}
+                                <br>
+                                <small class="text-muted">Action: ${error.action}</small>
+                            </div>
+                        </div>
+                    `
+                        )
+                        .join("")}
+                </div>
+            `;
+        } catch (error) {
+            console.error("Error fetching error codes:", error);
+            return "";
+        }
     }
 }

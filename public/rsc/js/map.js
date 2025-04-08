@@ -1301,8 +1301,10 @@ class StreetlightMap {
                     (warnings) => warnings.length > 0
                 )
             ) {
-                warningsContainer.innerHTML =
-                    ReadingsChecker.createWarningsHTML(allWarnings);
+                const warningsHTML = await ReadingsChecker.createWarningsHTML(
+                    allWarnings
+                );
+                warningsContainer.innerHTML = warningsHTML;
                 warningsContainer.classList.remove("d-none");
             } else {
                 warningsContainer.classList.add("d-none");
