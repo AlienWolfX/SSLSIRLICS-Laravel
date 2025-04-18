@@ -941,52 +941,53 @@ class StreetlightMap {
                     riseOnHover: false,
                 });
 
-                const statusBadge = `
-                    <span class="badge ${this.getStatusBadgeClass(
-                        device.status
-                    )}">
-                        <i class="fas fa-circle me-1"></i>${device.status}
-                    </span>
-                `;
-
                 const popupContent = `
-                            <div class="card border-0 shadow-lg rounded-3 bg-light position-relative" style="min-width: 220px;">
-                                <div class="card-body p-3">
-                                    <div class=">
-                                        <small class="text-muted">SOC ID:</small>
-                                        <strong class="text-dark">${device.soc_id}</strong>
-                                    </div>
-                            <div class="mt-2 d-flex align-items-center">
-                                    <span class="text-muted me-2">Status:</span>
-                                    <span class="d-flex flex-grow-1">
-                                        ${this.getStatusContent(device.status, device.updated_at)}
-                                    </span>
+                    <div class="card border-0 shadow-lg rounded-3 bg-light position-relative" style="min-width: 220px;">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div>
+                                    <small class="text-muted">SOC ID:</small>
+                                    <strong class="text-dark">${device.soc_id}</strong>
                                 </div>
-
-                                    <div class="mt-1 text-center">
-                                        <button onclick="streetlightMap.showDetails('${device.soc_id}')"
-                                            class="btn btn-primary btn-sm w-100 rounded-pill">
-                                            <i class="fas fa-info-circle me-1"></i> More Details
-                                        </button>
+                            </div>
+                            
+                            <div class="status-container mt-2" style="min-height: 32px;">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span class="text-muted me-2">Status:</span>
+                                    <div class="flex-grow-1 text-end">
+                                        ${this.getStatusContent(device.status, device.updated_at)}
                                     </div>
                                 </div>
                             </div>
-                        `;
 
-                        // Only show popup on click, remove hover behavior
-                        marker.bindPopup(popupContent, {
-                            closeButton: true, // Hide default close button
-                            closeOnClick: true,
-                            autoClose: true,
-                        });
+                            <div class="action-container mt-2" style="min-height: 38px;">
+                                <div class="text-center">
+                                    <button onclick="streetlightMap.showDetails('${device.soc_id}')"
+                                        class="btn btn-primary btn-sm rounded-pill px-4 py-1" 
+                                        style="min-width: 140px;">
+                                        <i class="fas fa-info-circle me-1"></i> More Details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
 
-                        marker.deviceData = {
-                            soc_id: device.soc_id,
-                            status: device.status,
-                        };
+                // Only show popup on click, remove hover behavior
+                marker.bindPopup(popupContent, {
+                    closeButton: true,
+                    closeOnClick: true,
+                    autoClose: true,
+                    className: 'streetlight-popup'
+                });
 
-                        this.streetlightMarkers.set(device.soc_id, marker);
-                        return marker;
+                marker.deviceData = {
+                    soc_id: device.soc_id,
+                    status: device.status,
+                };
+
+                this.streetlightMarkers.set(device.soc_id, marker);
+                return marker;
             });
 
             L.featureGroup(markers).addTo(this.map);
@@ -1058,9 +1059,12 @@ class StreetlightMap {
 
     getStatusContent(status, date) {
         return `
-            <span class="badge ${this.getStatusBadgeClass(status)}">
-                <i class="fas fa-circle me-1"></i>${status}
-            </span>
+            <div class="badge-wrapper" style="min-width: 100px;">
+                <span class="badge ${this.getStatusBadgeClass(status)} d-flex align-items-center justify-content-center w-100" title="Last updated: ${date}">
+                    <i class="fas fa-circle me-1"></i>
+                    <span class="status-text">${status}</span>
+                </span>
+            </div>
         `;
     }
 
