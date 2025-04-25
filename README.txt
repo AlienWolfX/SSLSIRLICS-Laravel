@@ -1,111 +1,116 @@
-SSLSIRLICS Setup Guide
+# SSLSIRLICS Setup Guide
 
-This guide will help you set up the SSLSIRLICS project on your local machine. The archive you downloaded contains all necessary files, including a MySQL database dump for import.
+This guide will help you set up the Smart Street Light System Information Resource Logging Interface and Control System (SSLSIRLICS) on your local machine.
 
----
+## About SSLSIRLICS
 
-About SSLSIRLICS
+Smart Street Light System developed under the research "RS-Program on Producing Alternative Clean Energy and Power" in Partnership with Caraga LGUs and CSU CRAFT.
 
-Smart Street Light System which is under the research "RS-Program on Producing Alternative Clean Energy and Power in Partnership of Caraga LGU's | CSU CRAFT
+## Prerequisites
 
----
+### All-in-One Solution (Recommended)
+- Laragon Full 6.0
+  - Includes: Apache, MySQL, PHP, Node.js, and Composer
+  - Download: https://laragon.org/download/
 
-Prerequisites
+### Individual Components (Alternative Setup)
+- PHP 8.2.28
+- Composer 2.8.5
+- MySQL 8.0.30
+- Node.js 20+
+- 7-Zip
 
-All-in-One (Recommended)
--   Laragon Full 6.0 (includes Apache, MySQL, PHP, Node.js, Composer)
+## Initial Setup
 
-Individual Packages (if not using Laragon)
--   PHP 8.2.28
--   Composer 2.8.5
--   MySQL 8.0.30
--   Node.js 20+
+### 1. Configure Laragon Quick-Add Repository
+1. Navigate to: `C:\laragon\usr\sites.conf.d`
+2. Create or edit `quick-add.conf`
+3. Add the following package definitions:
 
----
+```conf
+# Core Components
+php-8.2.28=https://windows.php.net/downloads/releases/php-8.2.28-nts-Win32-vs16-x64.zip
+mysql-8.0.30=https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.30-winx64.zip
+apache-2.4.62=https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.62-240904-win64-VS17.zip
+phpmyadmin-5.2.2=https://files.phpmyadmin.net/phpMyAdmin/5.2.2/phpMyAdmin-5.2.2-all-languages.zip
+nodejs-20.18.1=https://nodejs.org/dist/v20.18.1/node-v20.18.1-win-x64.zip
+```
 
-Step-by-Step Setup
+### 2. Install Required Components
 
-1. Extract the Archive
+#### Installing 7-Zip
+1. Download from https://7-zip.org/
+2. Run installer
+3. Add to System PATH:
+   ```powershell
+   # Open PowerShell as Administrator
+   $path = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+   $newPath = $path + ';C:\Program Files\7-Zip'
+   [Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine')
+   ```
 
-Unzip the archive to your preferred development directory (e.g., C:\laragon\www\SSLSIRLIC).
+#### Installing PHP 8.2.28
+1. Right-click Laragon tray icon
+2. Quick add > select "php-8.2.28"
+3. Navigate to PHP > Version > PHP 8.2.28
+4. Add to System PATH:
+   ```powershell
+   # Open PowerShell as Administrator
+   $path = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+   $newPath = $path + ';C:\laragon\bin\php\php-8.2.28-Win32-vs16-x64'
+   [Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine')
+   ```
 
----
+#### Installing phpMyAdmin
+1. Right-click Laragon tray icon
+2. Quick add > "phpmyadmin-5.2.2"
+3. Access at: http://localhost/phpmyadmin
 
-2. Import the MySQL Database
+## Project Setup
 
-1. Open phpMyAdmin or use the MySQL command line.
-2. Create a new database (e.g., sslsirlic).
-3. Import the provided SQL dump file (e.g., sslsirlic_dump.sql):
+1. Extract Archive
+   ```powershell
+   # Extract to Laragon www directory
+   Expand-Archive SSLSIRLIC.zip -DestinationPath C:\laragon\www\
+   ```
 
-   Using phpMyAdmin:
-   - Select your new database.
-   - Click "Import" and choose the SQL file.
+2. Database Setup
+   ```sql
+   -- Using MySQL CLI
+   CREATE DATABASE sslsirlic;
+   USE sslsirlic;
+   SOURCE C:\laragon\www\SSLSIRLIC\database\sslsirlic_dump.sql;
+   ```
 
-   Using command line:
-   mysql -u root -p sslsirlic < sslsirlic_dump.sql
+3. Environment Configuration
+   ```powershell
+   cd C:\laragon\www\SSLSIRLIC
+   copy .env.example .env
+   # Edit .env with your database credentials
+   ```
 
----
+4. Install Dependencies
+   ```powershell
+   composer install
+   npm install
+   npm run build
+   ```
 
-3. Configure Environment Variables
+## Device Registration Format
 
-1. Copy the example environment file:
-   cp .env.example .env
-2. Edit .env and update the following lines to match your MySQL setup:
-   DB_DATABASE=sslsirlic
-   DB_USERNAME=root
-   DB_PASSWORD=your_mysql_password
-   Adjust other settings as needed.
+SOCID Format: `{PROVINCE}-{MUNICIPALITY}-{BARANGAY}-{NUMBER}`
+Example: `ADN-1000-0001-001`
 
----
+## Troubleshooting Guide
 
-4. Install PHP Dependencies
+| Issue | Solution |
+|-------|----------|
+| Blank page | Check `.env` configuration |
+| Database error | Verify MySQL credentials |
+| Node.js errors | Run `npm install` again |
 
-composer install
+## Support
 
----
-
-5. Install Node.js Dependencies
-
-npm install
-
----
-
-6. Build Frontend Assets
-
-npm run build
-
-or, if using Vite for development:
-
-npm run dev
-
----
-
-7. Start the Development Server
-
-If using Laragon, your project will be available at http://localhost/SSLSIRLIC.
-
----
-
-Adding new device
-
-Format for SOCID (Refer to location.csv)
-
-{PROVINCE}-{MUNICIPALITY/CITY}-{BARANGAY}-{STREETLIGHT_NUMBER}
-
-Troubleshooting
-
--   Blank page or errors?
-    Check your .env settings and ensure all dependencies are installed.
--   Database connection issues?
-    Make sure MySQL is running and credentials in .env are correct.
--   Node/Vite errors?
-    Ensure you have Node.js 20+ and run npm install again.
-
----
-
-Credits
-
--   Research by CSU CRAFT in partnership with Caraga LGUs.
--   For questions, visit https://github.com/AlienWolfX.
-
----
+- Documentation: [Project Wiki](https://github.com/AlienWolfX/SSLSIRLICS/wiki)
+- Issues: [GitHub Issues](https://github.com/AlienWolfX/SSLSIRLICS/issues)
+- Contact: CSU CRAFT Research Team

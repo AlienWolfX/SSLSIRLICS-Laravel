@@ -82,8 +82,6 @@ composer install
 npm install
 ```
 
----bash
-
 ### 6. Build Frontend Assets
 
 ```bash

@@ -347,7 +347,7 @@
                         <div class="battery-status-main p-4 rounded bg-light h-100">
                           <i class="fas fa-battery-three-quarters battery-icon" style="font-size: 3rem"></i>
                           <div class="display-4 mt-2">
-                            <span id="modal-batsoc">-</span>%
+                            <span id="modal-batsoc">-</span>
                           </div>
                           <div class="text-muted">State of Charge</div>
                         </div>
@@ -358,7 +358,7 @@
                             <div class="battery-status-main p-4 rounded bg-light h-100">
                               <i class="fas fa-bolt battery-icon" style="font-size: 3rem"></i>
                               <div class="display-5 mt-2">
-                                <span id="modal-batv">-</span> V
+                                <span id="modal-batv">-</span>
                               </div>
                               <div class="text-muted">Battery Voltage</div>
                             </div>
@@ -367,7 +367,7 @@
                             <div class="battery-status-main p-4 rounded bg-light h-100">
                               <i class="fas fa-charging-station battery-icon" style="font-size: 3rem"></i>
                               <div class="display-5 mt-2">
-                                <span id="modal-batc">-</span> A
+                                <span id="modal-batc">-</span>
                               </div>
                               <div class="text-muted">Charging Current</div>
                             </div>
