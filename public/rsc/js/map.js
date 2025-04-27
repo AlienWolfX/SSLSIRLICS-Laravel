@@ -190,11 +190,13 @@ class StreetlightMap {
             console.group("Loading Municipality Markers");
             console.log("Province Code:", provinceCode);
 
+            // Clear existing markers
             this.municipalityMarkers.forEach((marker) =>
                 this.map.removeLayer(marker)
             );
             this.municipalityMarkers.clear();
             this.toggleMarkersVisibility();
+
             const provinceKey = Object.keys(
                 this.caragaData["13"].province_list
             ).find(
@@ -211,9 +213,10 @@ class StreetlightMap {
             const provinceData =
                 this.caragaData["13"].province_list[provinceKey];
 
-            for (const [name, data] of Object.entries(
+            // Prepare all API requests in parallel
+            const municipalityPromises = Object.entries(
                 provinceData.municipality_list
-            )) {
+            ).map(async ([name, data]) => {
                 if (
                     !data?.coordinates?.latitude ||
                     !data?.coordinates?.longitude
@@ -221,13 +224,8 @@ class StreetlightMap {
                     console.warn(
                         `Missing coordinates for municipality: ${name}`
                     );
-                    continue;
+                    return null;
                 }
-
-                const coordinates = [
-                    data.coordinates.latitude,
-                    data.coordinates.longitude,
-                ];
 
                 const response = await window.apiService.getMunicipalityCount(
                     `${provinceCode}/${data.municipality_code}`
@@ -235,9 +233,24 @@ class StreetlightMap {
 
                 if (!response?.data || response.data.total_devices === 0) {
                     console.log(`Skipping municipality ${name} - no devices`);
-                    continue;
+                    return null;
                 }
 
+                return { name, data, response };
+            });
+
+            // Wait for all requests to complete
+            const results = await Promise.all(municipalityPromises);
+
+            // Process results and create markers
+            results.forEach((result) => {
+                if (!result) return;
+                const { name, data, response } = result;
+
+                const coordinates = [
+                    data.coordinates.latitude,
+                    data.coordinates.longitude,
+                ];
                 const { has_inactive = false, has_maintenance = false } =
                     response?.data?.status_summary || {};
                 const count = response?.data?.total_devices || 0;
@@ -245,6 +258,7 @@ class StreetlightMap {
                 const icon = this.getMarkerIcon(has_inactive, has_maintenance);
                 const marker = L.marker(coordinates, { icon }).addTo(this.map);
 
+                // ... rest of your marker setup code ...
                 const popupContent = this.createPopupContent(name, count);
                 marker.bindPopup(
                     L.popup({
@@ -253,6 +267,7 @@ class StreetlightMap {
                     }).setContent(popupContent)
                 );
 
+                // Add event listeners
                 marker.on("mouseover", () => {
                     marker.openPopup();
                     marker.setZIndexOffset(1000);
@@ -270,10 +285,6 @@ class StreetlightMap {
                 });
 
                 marker.on("click", () => {
-                    console.log(
-                        "Municipality clicked:",
-                        data.municipality_code
-                    );
                     this.loadBarangayMarkers(
                         provinceCode,
                         data.municipality_code
@@ -281,22 +292,14 @@ class StreetlightMap {
                     this.map.flyTo(coordinates, this.barangayZoomThreshold, {
                         animate: true,
                         duration: 1,
-                        complete: () => {
-                            console.log("Fly animation complete");
-                        },
                     });
                 });
 
                 const markerKey = `${provinceCode}_${data.municipality_code}`;
                 this.municipalityMarkers.set(markerKey, marker);
+            });
 
-                console.log(
-                    `Added municipality marker: ${markerKey}`,
-                    coordinates,
-                    `Devices: ${count}`
-                );
-            }
-
+            // Update visibility
             this.markers.forEach((marker) => marker.setOpacity(0));
             this.municipalityMarkers.forEach((marker) => marker.setOpacity(1));
 
@@ -307,7 +310,6 @@ class StreetlightMap {
             console.groupEnd();
         } catch (error) {
             console.error("Error in loadMunicipalityMarkers:", error);
-            console.trace(error);
             console.groupEnd();
         }
     }
@@ -315,16 +317,16 @@ class StreetlightMap {
     async loadBarangayMarkers(provinceCode, municipalityCode) {
         try {
             console.group("Loading Barangay Markers");
-            console.log(
-                "Loading barangays for:",
-                provinceCode,
-                municipalityCode
-            );
 
+            // Clear existing markers
             this.barangayMarkers.forEach((marker) =>
                 this.map.removeLayer(marker)
             );
             this.barangayMarkers.clear();
+            this.markers.forEach((marker) => this.map.removeLayer(marker));
+            this.municipalityMarkers.forEach((marker) =>
+                this.map.removeLayer(marker)
+            );
 
             const provinceKey = Object.keys(
                 this.caragaData["13"].province_list
@@ -340,77 +342,67 @@ class StreetlightMap {
                 return;
             }
 
-            const provinceData =
-                this.caragaData["13"].province_list[provinceKey];
-
-            const municipalityKey = Object.keys(
-                provinceData.municipality_list
-            ).find(
-                (key) =>
-                    provinceData.municipality_list[key].municipality_code ===
-                    municipalityCode
-            );
-
-            if (!municipalityKey) {
-                console.error("Municipality key not found:", municipalityCode);
-                console.groupEnd();
-                return;
-            }
-
             const municipality =
-                provinceData.municipality_list[municipalityKey];
+                this.caragaData["13"].province_list[provinceKey]
+                    .municipality_list[
+                    Object.keys(
+                        this.caragaData["13"].province_list[provinceKey]
+                            .municipality_list
+                    ).find(
+                        (key) =>
+                            this.caragaData["13"].province_list[provinceKey]
+                                .municipality_list[key].municipality_code ===
+                            municipalityCode
+                    )
+                ];
 
-            // Use barangays instead of barangay_list
             if (!municipality?.barangays) {
                 console.error(
                     "No barangays found for municipality:",
-                    municipality.name
+                    municipality?.name
                 );
                 console.groupEnd();
                 return;
             }
 
-            console.log(
-                "Found municipality:",
-                municipalityKey,
-                "with",
-                Object.keys(municipality.barangays).length,
-                "barangays"
-            );
+            // Prepare all API requests in parallel
+            const barangayPromises = Object.entries(municipality.barangays).map(
+                async ([name, data]) => {
+                    if (
+                        !data?.coordinates?.latitude ||
+                        !data?.coordinates?.longitude
+                    ) {
+                        console.warn(
+                            `Missing coordinates for barangay: ${name}`
+                        );
+                        return null;
+                    }
 
-            // Remove existing markers
-            this.markers.forEach((marker) => this.map.removeLayer(marker));
-            this.municipalityMarkers.forEach((marker) =>
-                this.map.removeLayer(marker)
-            );
-            this.barangayMarkers.forEach((marker) =>
-                this.map.removeLayer(marker)
-            );
+                    const response = await window.apiService.getBarangayCount(
+                        `${provinceCode}/${municipalityCode}/${data.barangay_code}`
+                    );
 
-            // Create markers for each barangay
-            for (const [name, data] of Object.entries(municipality.barangays)) {
-                if (
-                    !data?.coordinates?.latitude ||
-                    !data?.coordinates?.longitude
-                ) {
-                    console.warn(`Missing coordinates for barangay: ${name}`);
-                    continue;
+                    if (!response?.data || response.data.total_devices === 0) {
+                        console.log(`Skipping barangay ${name} - no devices`);
+                        return null;
+                    }
+
+                    return { name, data, response };
                 }
+            );
+
+            // Wait for all requests to complete
+            const results = await Promise.all(barangayPromises);
+
+            // Process results and create markers
+            results.forEach((result) => {
+                if (!result) return;
+                const { name, data, response } = result;
 
                 const coordinates = [
                     data.coordinates.latitude,
                     data.coordinates.longitude,
                 ];
-
-                const response = await window.apiService.getBarangayCount(
-                    `${provinceCode}/${municipalityCode}/${data.barangay_code}`
-                );
-
-                if (!response?.data || response.data.total_devices === 0) {
-                    console.log(`Skipping barangay ${name} - no devices`);
-                    continue;
-                }
-
                 const { has_inactive = false, has_maintenance = false } =
                     response?.data?.status_summary || {};
                 const count = response?.data?.total_devices || 0;
@@ -418,6 +410,7 @@ class StreetlightMap {
                 const icon = this.getMarkerIcon(has_inactive, has_maintenance);
                 const marker = L.marker(coordinates, { icon }).addTo(this.map);
 
+                // ... rest of your marker setup code ...
                 const popupContent = this.createPopupContent(name, count);
                 marker.bindPopup(
                     L.popup({
@@ -444,29 +437,22 @@ class StreetlightMap {
 
                 marker.on("click", () => {
                     this.lastClickedBarangay = marker;
-                    const [province, municipality, barangay] =
-                        markerKey.split("_");
-
-                    this.toggleMarkersVisibility();
                     this.loadStreetlightMarkers(
-                        province,
-                        municipality,
-                        barangay
+                        provinceCode,
+                        municipalityCode,
+                        data.barangay_code
                     );
-
                     this.map.flyTo(coordinates, this.detailZoomLevel, {
                         animate: true,
                         duration: 1,
-                        complete: () => {
-                            console.log("Zoomed to barangay detail");
-                        },
                     });
                 });
 
                 const markerKey = `${provinceCode}_${municipalityCode}_${data.barangay_code}`;
                 this.barangayMarkers.set(markerKey, marker);
-            }
+            });
 
+            // Update visibility
             this.municipalityMarkers.forEach((marker) => marker.setOpacity(0));
             this.barangayMarkers.forEach((marker) => marker.setOpacity(1));
 
@@ -477,7 +463,6 @@ class StreetlightMap {
             console.groupEnd();
         } catch (error) {
             console.error("Error loading barangay markers:", error);
-            console.trace(error);
             console.groupEnd();
         }
     }
@@ -1206,7 +1191,7 @@ class StreetlightMap {
             );
             document.getElementById("modal-batsoc").textContent = formatValue(
                 data.battery_soc,
-                1,
+                0,
                 "%"
             );
             document.getElementById("modal-batv").textContent = formatValue(
@@ -1234,9 +1219,8 @@ class StreetlightMap {
                 chargingHistory.push({
                     timestamp: data.last_update,
                     battery_soc: data.battery_soc,
-                    solar_voltage: data.solar_voltage,
+                    solar_current: data.solar_current,
                     battery_voltage: data.battery_voltage,
-                    current: data.current,
                 });
             }
 
@@ -1321,7 +1305,7 @@ class StreetlightMap {
                 h &&
                 h.timestamp &&
                 ((h.battery_soc != null && !isNaN(h.battery_soc)) ||
-                    (h.solar_voltage != null && !isNaN(h.solar_voltage)) ||
+                    (h.solar_current != null && !isNaN(h.solar_current)) ||
                     (h.battery_voltage != null && !isNaN(h.battery_voltage)))
         );
 
@@ -1333,11 +1317,11 @@ class StreetlightMap {
                     : null,
         }));
 
-        const solarVoltageData = validHistory.map((h) => ({
+        const solarCurrentData = validHistory.map((h) => ({
             x: new Date(h.timestamp),
             y:
-                h.solar_voltage != null && !isNaN(h.solar_voltage)
-                    ? Number(h.solar_voltage)
+                h.solar_current != null && !isNaN(h.solar_current)
+                    ? Number(h.solar_current)
                     : null,
         }));
 
@@ -1356,8 +1340,8 @@ class StreetlightMap {
                     data: batterySocData,
                 },
                 {
-                    name: "Solar Voltage",
-                    data: solarVoltageData,
+                    name: "Solar Current",
+                    data: solarCurrentData,
                 },
                 {
                     name: "Battery Voltage",
@@ -1410,11 +1394,10 @@ class StreetlightMap {
                         text: "Battery Level (%)",
                     },
                     labels: {
-                        formatter: (val) => {
-                            return val != null && !isNaN(val)
-                                ? `${val.toFixed(1)}%`
-                                : "-";
-                        },
+                        formatter: (val) =>
+                            val != null && !isNaN(val)
+                                ? `${Math.round(val)}%` // Changed from toFixed(1) to Math.round()
+                                : "-",
                     },
                     forceNiceScale: true,
                     min: undefined,
@@ -1422,14 +1405,13 @@ class StreetlightMap {
                 },
                 {
                     title: {
-                        text: "Voltage (V)",
+                        text: "Current (A)", // Changed from Voltage (V)
                     },
                     labels: {
-                        formatter: (val) => {
-                            return val != null && !isNaN(val)
-                                ? `${val.toFixed(1)}V`
-                                : "-";
-                        },
+                        formatter: (val) =>
+                            val != null && !isNaN(val)
+                                ? `${val.toFixed(2)}A`
+                                : "-", // Changed precision and unit
                     },
                     opposite: true,
                     forceNiceScale: true,
@@ -1448,10 +1430,10 @@ class StreetlightMap {
 
                         switch (seriesIndex) {
                             case 0: // Battery Level
-                                return `${value.toFixed(1)}%`;
-                            case 3: // Current
+                                return `${Math.round(value)}%`; // Changed from toFixed(1)
+                            case 1: // Solar Current
                                 return `${value.toFixed(2)}A`;
-                            default: // Voltages
+                            case 2: // Battery Voltage
                                 return `${value.toFixed(1)}V`;
                         }
                     },
@@ -1490,7 +1472,6 @@ class StreetlightMap {
             clearInterval(this.chartPolling);
         }
 
-        // Track last update timestamp to avoid unnecessary updates
         let lastUpdateTimestamp = null;
 
         const CHART_POLLING_INTERVAL = 5000;
@@ -1504,11 +1485,9 @@ class StreetlightMap {
                 const data = response.data;
                 if (!data || !data.last_update) return;
 
-                // Check if this is a new data point by comparing timestamps
                 const currentTimestamp = new Date(data.last_update).getTime();
                 const isNewData = lastUpdateTimestamp !== currentTimestamp;
 
-                // Only process UI updates if there's actually new data
                 if (isNewData) {
                     lastUpdateTimestamp = currentTimestamp;
 
@@ -1539,7 +1518,7 @@ class StreetlightMap {
                     document.getElementById("modal-curv").textContent =
                         formatValue(data.bulb_current, 2, "A");
                     document.getElementById("modal-batsoc").textContent =
-                        formatValue(data.battery_soc, 1, "%");
+                        formatValue(data.battery_soc, 0, "%");
                     document.getElementById("modal-batv").textContent =
                         formatValue(data.battery_voltage, 1, "V");
                     document.getElementById("modal-batc").textContent =
@@ -1589,16 +1568,17 @@ class StreetlightMap {
                             });
                         }
 
+                        // Changed from solar_voltage to solar_current
                         if (
-                            data.solar_voltage != null &&
-                            !isNaN(data.solar_voltage)
+                            data.solar_current != null &&
+                            !isNaN(data.solar_current)
                         ) {
                             dataPoints.push({
                                 seriesIndex: 1,
                                 data: [
                                     {
                                         x: new Date(data.last_update),
-                                        y: Number(data.solar_voltage),
+                                        y: Number(data.solar_current),
                                     },
                                 ],
                             });
@@ -1622,8 +1602,6 @@ class StreetlightMap {
                         // Only append data if we have valid points
                         if (dataPoints.length > 0) {
                             this.chargingChart.appendData(dataPoints);
-
-                            // Clean up series data - keep only valid, recent points
                             this.cleanupChartSeries();
                         }
                     }

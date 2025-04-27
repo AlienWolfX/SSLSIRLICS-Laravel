@@ -23,9 +23,9 @@ class ReadingsChecker {
         }
 
         // Error 111: Bulb on during daytime
-        if (this.isDaytime() && readings.bulb_current > 0) {
-            errors.push("111");
-        }
+        // if (this.isDaytime() && readings.bulb_current == 0) {
+        //     errors.push("111");
+        // }
 
         // Error 311: Solar panel connection issue
         if (
