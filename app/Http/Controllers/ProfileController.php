@@ -57,4 +57,11 @@ class ProfileController extends Controller
 
         return Redirect::to('/');
     }
+
+    public function createToken(Request $request)
+    {
+        $request->validate(['token_name' => 'required|string|max:255']);
+        $token = $request->user()->createToken($request->token_name)->plainTextToken;
+        return back()->with('token', $token);
+    }
 }

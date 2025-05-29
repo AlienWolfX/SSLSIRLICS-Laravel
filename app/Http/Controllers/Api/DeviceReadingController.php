@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DeviceReading;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 
 class DeviceReadingController extends Controller
 {
@@ -82,5 +83,57 @@ class DeviceReadingController extends Controller
             'historical_data' => $historicalData,
             'message' => 'Device readings retrieved successfully'
         ]);
+    }
+
+    /**
+     * Store a new device reading via API (requires Sanctum token).
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function store(Request $request): JsonResponse
+    {
+        // Ensure the request is authenticated via Sanctum
+        $user = Auth::guard('sanctum')->user();
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Valid API token required.'
+            ], 401);
+        }
+
+        try {
+            $validated = $request->validate([
+                'SOCid'   => 'required|string',
+                'bulbv'   => 'required|numeric',
+                'bulbc'   => 'required|numeric',
+                'solv'    => 'required|numeric',
+                'solc'    => 'required|numeric',
+                'batv'    => 'required|numeric',
+                'batc'    => 'required|numeric',
+                'batsoc'  => 'required|numeric',
+                'date'    => 'required|date',
+            ]);
+
+            $reading = DeviceReading::create($validated);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $reading,
+                'message' => 'Device reading stored successfully'
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to store device reading.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
