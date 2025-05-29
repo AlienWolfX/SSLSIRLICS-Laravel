@@ -16,6 +16,7 @@ Route::prefix('v1')->group(function () {
     # Readings
     Route::get('/readings', [DeviceReadingController::class, 'index']);
     Route::get('/readings/{socid}', [DeviceReadingController::class, 'show']);
+    Route::post('/readings', [DeviceReadingController::class, 'store'])->middleware('auth:sanctum');
 
     # Map and Information stuff
     Route::post('/devices/status', [DeviceController::class, 'setStatus'])->name('devices.setStatus');
@@ -26,5 +27,6 @@ Route::prefix('v1')->group(function () {
     Route::get('/barangay_count/{province}/{municipality}/{barangay}', [DeviceController::class, 'barangay_count']);
 
     Route::get('/error-codes', [ErrorCodeController::class, 'getErrorCodes']);
+
 });
 
